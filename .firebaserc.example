@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "neurones-hr-360",
+    "staging": "neurones-hr-360-staging"
+  }
+}

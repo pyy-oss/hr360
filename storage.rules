@@ -1,0 +1,19 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function role() { return signedIn() ? request.auth.token.role : 'anon'; }
+    function hasAny(roles) { return signedIn() && role() in roles; }
+
+    // Justificatifs d'absence : lecture RH + manager ; écriture par un utilisateur connecté.
+    match /leave/{orgId}/{requestId}/{fileName} {
+      allow read:  if hasAny(['super_admin','drh','rh','manager']) || signedIn();
+      allow write: if signedIn() && request.resource.size < 10 * 1024 * 1024;
+    }
+    // Documents RH : réservés RH.
+    match /hr/{orgId}/{allPaths=**} {
+      allow read, write: if hasAny(['super_admin','drh','rh']);
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}
