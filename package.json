@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "emulators": "firebase emulators:start",
     "test": "vitest run",
-    "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/\"",
+    "test:rules": "firebase emulators:exec --only firestore --project neurones-hr-360-test \"vitest run tests/\"",
     "deploy": "npm run build && firebase deploy",
     "test:functions": "firebase emulators:exec --only firestore,auth --project neurones-hr-360-test \"cd functions && npm run test\""
   },

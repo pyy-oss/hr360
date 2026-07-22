@@ -7,9 +7,15 @@ import type { Firestore } from 'firebase/firestore';
 export const ORG = 'neurones';
 let env: RulesTestEnvironment;
 
+// projectId unique par fichier de test : les fichiers Vitest s'exécutent en
+// parallèle contre le même émulateur ; un projectId partagé ferait que le
+// clearFirestore() d'un fichier efface les fixtures d'un autre (données ->
+// resource.data null -> « Null value error » dans les règles).
+const PROJECT_ID = `neurones-hr-360-test-${Math.random().toString(36).slice(2, 10)}`;
+
 export async function setupEnv(): Promise<RulesTestEnvironment> {
   env = await initializeTestEnvironment({
-    projectId: 'neurones-hr-360-test',
+    projectId: PROJECT_ID,
     firestore: { rules: readFileSync('firestore.rules', 'utf8') },
   });
   return env;

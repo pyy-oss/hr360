@@ -17,8 +17,10 @@ jobs:
         run: |
           npm run build
           cd functions && npm run build
-      - name: Test (Vitest + emulator rules)
-        run: npm run test
+      - name: Test (Vitest + emulator rules & functions)
+        run: |
+          npm run test:rules
+          npm run test:functions
       - name: Deploy
         # FIREBASE_TOKEN est un secret GitHub — jamais commité.
         run: npx firebase-tools deploy --only hosting,firestore,functions,storage --token "$FIREBASE_TOKEN"
