@@ -1,0 +1,28 @@
+name: Deploy Neurones HR 360
+on:
+  push:
+    branches: [main]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - name: Install (front)
+        run: npm ci
+      - name: Install (functions)
+        run: cd functions && npm ci
+      - name: Type-check & build
+        run: |
+          npm run build
+          cd functions && npm run build
+      - name: Test (Vitest + emulator rules & functions)
+        run: |
+          npm run test:rules
+          npm run test:functions
+      - name: Deploy
+        # FIREBASE_TOKEN est un secret GitHub — jamais commité.
+        run: npx firebase-tools deploy --only hosting,firestore,functions,storage --token "$FIREBASE_TOKEN"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

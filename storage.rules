@@ -1,0 +1,33 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function claims()   { return request.auth.token; }
+    function role()     { return signedIn() ? claims().role : 'anon'; }
+    function orgId()    { return claims().orgId; }
+    function empId()    { return claims().employeeId; }
+    function hasAny(roles) { return signedIn() && role() in roles; }
+    function sameOrg(oid)  { return signedIn() && oid == orgId(); }
+    function isValidator() { return hasAny(['super_admin', 'drh', 'rh', 'manager']); }
+
+    // Justificatifs d'absence (données sensibles). Chemin porteur du propriétaire :
+    // leave/{orgId}/{employeeId}/{requestId}/{fileName}.
+    // Lecture/écriture réservées, DANS l'organisation, au demandeur (propriétaire du
+    // dossier) ou à un valideur RH/manager. Écriture bornée en taille et en type.
+    match /leave/{orgId}/{employeeId}/{requestId}/{fileName} {
+      allow read:  if sameOrg(orgId) && (isValidator() || empId() == employeeId);
+      allow write: if sameOrg(orgId)
+                   && (isValidator() || empId() == employeeId)
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('application/pdf|image/(png|jpeg|jpg|webp)');
+    }
+
+    // Documents RH : réservés RH/DRH/admin, strictement dans leur organisation.
+    match /hr/{orgId}/{allPaths=**} {
+      allow read, write: if hasAny(['super_admin', 'drh', 'rh']) && sameOrg(orgId);
+    }
+
+    // Par défaut : tout est refusé.
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

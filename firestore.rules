@@ -1,0 +1,223 @@
+rules_version = '2';
+// Neurones HR 360 — règles de sécurité (AUTORITÉ RBAC côté données).
+// Le rôle et le rattachement viennent des custom claims du token Firebase.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+    function signedIn() { return request.auth != null; }
+    function claims()   { return request.auth.token; }
+    function role()     { return signedIn() ? claims().role : 'anon'; }
+    function orgId()    { return claims().orgId; }
+    function empId()    { return claims().employeeId; }
+    function deptId()   { return claims().departmentId; }
+
+    function hasAny(roles) { return signedIn() && role() in roles; }
+    function sameOrg(res)  { return signedIn() && res.orgId == orgId(); }
+    function isSelfEmp(eid){ return signedIn() && eid == empId(); }
+    function isDeptManager(d) { return role() == 'manager' && d == deptId(); }
+
+    // Écriture réservée au serveur (Admin SDK ignore ces règles) → toujours false ici.
+    function serverOnly() { return false; }
+
+    // Interdit au client de modifier un champ (ex. status, role) : la valeur ne change pas.
+    function unchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    // ---------- organizations ----------
+    match /organizations/{oid} {
+      allow read: if signedIn() && oid == orgId();
+      allow write: if hasAny(['super_admin']);
+    }
+
+    // ---------- departments ----------
+    match /departments/{id} {
+      allow read:  if sameOrg(resource.data);
+      allow write: if hasAny(['super_admin','drh']);
+    }
+
+    // ---------- users (reflet d'affichage ; le rôle qui fait autorité est dans les claims) ----------
+    match /users/{uid} {
+      allow read:  if signedIn() && (uid == request.auth.uid || hasAny(['super_admin','drh','rh','lecture']));
+      // Le champ role NE PEUT PAS être écrit ici : il est posé via setUserRole (custom claims).
+      allow update: if hasAny(['super_admin','drh']) && unchanged('role');
+      allow create, delete: if hasAny(['super_admin','drh']);
+    }
+
+    // ---------- employees (dossier RH) ----------
+    match /employees/{id} {
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    isSelfEmp(id)
+                  );
+      allow create, update: if hasAny(['super_admin','drh','rh']) && sameOrg(request.resource.data);
+      allow delete: if hasAny(['super_admin','drh']);
+    }
+
+    // ---------- leaveRequests (absences & congés) ----------
+    match /leaveRequests/{id} {
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    isSelfEmp(resource.data.employeeId)
+                  );
+
+      // Création UNIQUEMENT via submitLeaveRequest (Cloud Function) : elle revalide le
+      // solde et réserve les jours en 'pending' dans une transaction — invariants que
+      // les règles ne peuvent pas garantir. Le client ne crée jamais de demande en direct.
+      allow create: if false;
+
+      // Le demandeur peut UNIQUEMENT annuler sa demande tant qu'aucune décision n'est prise.
+      // Toute autre transition de statut (valider/refuser) passe par la Cloud Function.
+      allow update: if signedIn()
+                    && isSelfEmp(resource.data.employeeId)
+                    && resource.data.status == 'soumis'
+                    && request.resource.data.status == 'annule'
+                    && unchanged('employeeId');
+
+      allow delete: if hasAny(['super_admin','drh']);
+      // NB : approuver/refuser = decideLeaveRequest (serveur), pas une écriture client.
+    }
+
+    // ---------- leaveBalances (soldes — écriture serveur uniquement) ----------
+    match /leaveBalances/{id} {
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    isSelfEmp(resource.data.employeeId)
+                  );
+      allow write: if serverOnly();
+    }
+
+    // ---------- formation ----------
+    match /trainingCatalog/{id} {
+      allow read:  if sameOrg(resource.data);
+      allow write: if hasAny(['super_admin','drh','rh']);
+    }
+    match /trainingNeeds/{id} {
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    isSelfEmp(resource.data.employeeId)
+                  );
+      allow create, update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId)
+                  );
+      allow delete: if hasAny(['super_admin','drh','rh']);
+    }
+    match /trainingPlans/{id} {
+      allow read: if sameOrg(resource.data);
+      allow create, update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId)
+                  );
+      allow delete: if hasAny(['super_admin','drh']);
+    }
+    match /enrollments/{id} {
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    isSelfEmp(resource.data.employeeId)
+                  );
+      allow create, update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId)
+                  );
+      allow delete: if hasAny(['super_admin','drh','rh']);
+    }
+
+    // ---------- objectifs & évaluations ----------
+    match /objectiveCampaigns/{id} {
+      allow read:  if sameOrg(resource.data);
+      allow write: if hasAny(['super_admin','drh']); // transitions de phase via fonction
+    }
+    match /objectives/{id} {
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    isSelfEmp(resource.data.employeeId)
+                  );
+      // Collaborateur : propose SES objectifs en statut brouillon (création).
+      allow create: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId) ||
+                    (isSelfEmp(request.resource.data.employeeId)
+                       && request.resource.data.status == 'brouillon')
+                  );
+      // Mise à jour : droits fondés sur le document EXISTANT (pas les données soumises).
+      // Le collaborateur ne modifie que SON objectif encore en brouillon et ne peut ni
+      // le réattribuer ni le sortir du brouillon (validation via validateObjective).
+      allow update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    (isSelfEmp(resource.data.employeeId)
+                       && unchanged('employeeId')
+                       && resource.data.status == 'brouillon'
+                       && request.resource.data.status == 'brouillon')
+                  );
+      allow delete: if hasAny(['super_admin','drh']);
+    }
+    match /evaluations/{id} {
+      // Le collaborateur ne voit son évaluation que si elle est publiée.
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    (isSelfEmp(resource.data.employeeId) && resource.data.status == 'publiee')
+                  );
+      // Auto-évaluation par le collaborateur (self) ; évaluation par le manager/RH.
+      // Le statut est TOUJOURS inchangé côté client : toute transition (dont la
+      // publication -> 'publiee') passe par la fonction publishEvaluation + audit.
+      allow update: if sameOrg(request.resource.data) && unchanged('status') && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    (isSelfEmp(resource.data.employeeId)
+                       && unchanged('employeeId') && unchanged('managerAssessment'))
+                  );
+      allow create, delete: if hasAny(['super_admin','drh','rh']);
+    }
+
+    // ---------- audit (append-only, serveur uniquement en écriture) ----------
+    match /auditLogs/{id} {
+      allow read:  if hasAny(['super_admin','drh']);
+      allow write: if serverOnly();
+    }
+
+    // ---------- notifications ----------
+    match /notifications/{id} {
+      allow read: if signedIn() && resource.data.toUid == request.auth.uid;
+      // Le destinataire peut UNIQUEMENT marquer sa notification comme lue.
+      allow update: if signedIn() && resource.data.toUid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+      allow create, delete: if serverOnly();
+    }
+
+    // ---------- staffing (missions & affectations) ----------
+    match /missions/{id} {
+      allow read: if sameOrg(resource.data);
+      allow create, update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId)
+                  );
+      allow delete: if hasAny(['super_admin','drh']);
+    }
+    match /assignments/{id} {
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    isSelfEmp(resource.data.employeeId)
+                  );
+      // Écritures possibles RH / manager du département ; la garde anti sur-allocation
+      // (somme des allocations chevauchantes <= 100%) est appliquée par upsertAssignment.
+      allow create, update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId)
+                  );
+      allow delete: if hasAny(['super_admin','drh','rh']);
+    }
+
+    // Par défaut : tout est refusé.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
