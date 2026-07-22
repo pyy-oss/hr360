@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertDeptManagerOrHR } from '../lib/rbac';
+import { assertDeptManagerOrHR, assertSameOrg } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -21,6 +21,7 @@ export const validateObjective = onCall(async (req) => {
     throw new HttpsError('failed-precondition', 'Seul un objectif en brouillon peut être validé.');
   }
   const c = assertDeptManagerOrHR(req, snap.get('departmentId'));
+  assertSameOrg(c, snap.get('orgId'));
 
   await ref.update({ status: 'valide', updatedAt: FieldValue.serverTimestamp() });
   await writeAudit({

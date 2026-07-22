@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertRole } from '../lib/rbac';
+import { assertRole, assertSameOrg } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -24,6 +24,7 @@ export const advanceCampaignPhase = onCall(async (req) => {
   const result = await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) throw new HttpsError('not-found', 'Campagne introuvable.');
+    assertSameOrg(c, snap.get('orgId'));
     const from = snap.get('phase') as string;
     if (ORDER.indexOf(toPhase) !== ORDER.indexOf(from) + 1) {
       throw new HttpsError('failed-precondition', `Transition ${from} → ${toPhase} non autorisée.`);

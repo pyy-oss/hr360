@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertDeptManagerOrHR } from '../lib/rbac';
+import { assertDeptManagerOrHR, assertSameOrg, getClaims } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -30,10 +30,19 @@ export const upsertAssignment = onCall(async (req) => {
   if (new Date(p.data.endDate) < new Date(p.data.startDate)) {
     throw new HttpsError('invalid-argument', 'La date de fin précède la date de début.');
   }
-  const c = assertDeptManagerOrHR(req, p.data.departmentId);
   const { id, ...data } = p.data;
 
+  const c = getClaims(req);
   const ref = id ? db.doc(`assignments/${id}`) : db.collection('assignments').doc();
+  if (id) {
+    const existing = await ref.get();
+    if (!existing.exists) throw new HttpsError('not-found', 'Affectation introuvable.');
+    assertSameOrg(c, existing.get('orgId'));
+    // Droit basé sur le département EXISTANT de l'affectation (pas celui soumis).
+    assertDeptManagerOrHR(req, existing.get('departmentId'));
+  }
+  // Droit sur le département cible.
+  assertDeptManagerOrHR(req, data.departmentId);
 
   await db.runTransaction(async (tx) => {
     // Affectations existantes du collaborateur (hors celle en cours d'édition).
@@ -46,6 +55,8 @@ export const upsertAssignment = onCall(async (req) => {
     snap.forEach((d) => {
       if (d.id === ref.id) return;
       const a = d.data();
+      // Isolation : ne cumuler que les allocations de la même organisation.
+      if (a.orgId !== c.orgId) return;
       if (overlaps(data.startDate, data.endDate, a.startDate, a.endDate)) {
         overlapSum += a.allocationPct ?? 0;
       }

@@ -26,6 +26,17 @@ export function assertRole(req: CallableRequest, roles: Role[]): Claims {
   return c;
 }
 
+/**
+ * Isolation multi-tenant : la ressource ciblée doit appartenir à l'organisation
+ * de l'acteur. À appeler avec l'orgId LU sur le document existant (jamais celui
+ * fourni par le client) avant toute mutation d'un document déjà présent.
+ */
+export function assertSameOrg(claims: Claims, resourceOrgId: unknown): void {
+  if (!resourceOrgId || resourceOrgId !== claims.orgId) {
+    throw new HttpsError('permission-denied', 'Ressource hors de votre organisation.');
+  }
+}
+
 /** Exige d'être manager du département donné, OU un rôle RH/DRH/admin. */
 export function assertDeptManagerOrHR(req: CallableRequest, departmentId: string): Claims {
   const c = getClaims(req);

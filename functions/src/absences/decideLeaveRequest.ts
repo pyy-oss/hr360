@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertDeptManagerOrHR } from '../lib/rbac';
+import { assertDeptManagerOrHR, assertSameOrg, getClaims } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -30,7 +30,14 @@ export const decideLeaveRequest = onCall(async (req) => {
     if (!['soumis', 'valide_manager'].includes(data.status)) {
       throw new HttpsError('failed-precondition', 'Cette demande a déjà été traitée.');
     }
-    const claims = assertDeptManagerOrHR(req, data.departmentId);
+    const claims = getClaims(req);
+    // Isolation multi-tenant : la demande doit appartenir à l'organisation de l'acteur.
+    assertSameOrg(claims, data.orgId);
+    // Ségrégation des tâches : on ne décide jamais de sa propre demande.
+    if (claims.employeeId && claims.employeeId === data.employeeId) {
+      throw new HttpsError('permission-denied', 'Vous ne pouvez pas décider de votre propre demande.');
+    }
+    assertDeptManagerOrHR(req, data.departmentId);
 
     const before = { status: data.status };
     const balRef = db.doc(`leaveBalances/${data.employeeId}`);
@@ -38,10 +45,17 @@ export const decideLeaveRequest = onCall(async (req) => {
 
     if (counted) {
       const bal = await tx.get(balRef);
+      const entitled = bal.get(`entitlements.${data.type}`) ?? 0;
       const pending = bal.get(`pending.${data.type}`) ?? 0;
       const taken = bal.get(`taken.${data.type}`) ?? 0;
       const patch: Record<string, unknown> = { pending: { [data.type]: Math.max(0, pending - data.days) } };
-      if (decision === 'approuve') patch.taken = { [data.type]: taken + data.days };
+      if (decision === 'approuve') {
+        // Revalidation du solde au moment de l'approbation (défense en profondeur).
+        if (taken + data.days > entitled) {
+          throw new HttpsError('failed-precondition', 'Solde insuffisant : approbation refusée.');
+        }
+        patch.taken = { [data.type]: taken + data.days };
+      }
       tx.set(balRef, patch, { merge: true });
     }
 

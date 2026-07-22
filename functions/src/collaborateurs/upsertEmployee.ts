@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertRole } from '../lib/rbac';
+import { assertRole, assertSameOrg } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -35,7 +35,8 @@ export const upsertEmployee = onCall(async (req) => {
     const ref = db.doc(`employees/${id}`);
     const before = await ref.get();
     if (!before.exists) throw new HttpsError('not-found', 'Collaborateur introuvable.');
-    if (patch.departmentId) await assertDepartmentExists(patch.departmentId);
+    assertSameOrg(c, before.get('orgId'));
+    if (patch.departmentId) await assertDepartmentExists(patch.departmentId, c.orgId);
 
     await ref.update({ ...patch, updatedAt: FieldValue.serverTimestamp() });
     await writeAudit({
@@ -48,7 +49,7 @@ export const upsertEmployee = onCall(async (req) => {
 
   const p = CreateSchema.safeParse(req.data);
   if (!p.success) throw new HttpsError('invalid-argument', 'Dossier invalide.');
-  await assertDepartmentExists(p.data.departmentId);
+  await assertDepartmentExists(p.data.departmentId, c.orgId);
 
   const ref = db.collection('employees').doc();
   await ref.set({
@@ -62,7 +63,9 @@ export const upsertEmployee = onCall(async (req) => {
   return { ok: true, id: ref.id };
 });
 
-async function assertDepartmentExists(departmentId: string) {
+async function assertDepartmentExists(departmentId: string, orgId: string) {
   const dep = await db.doc(`departments/${departmentId}`).get();
-  if (!dep.exists) throw new HttpsError('failed-precondition', 'Département inexistant.');
+  if (!dep.exists || dep.get('orgId') !== orgId) {
+    throw new HttpsError('failed-precondition', 'Département inexistant.');
+  }
 }

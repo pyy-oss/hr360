@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertRole } from '../lib/rbac';
+import { assertRole, assertSameOrg } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -19,6 +19,11 @@ export const upsertDepartment = onCall(async (req) => {
   const { id, name, managerUid } = p.data;
 
   const ref = id ? db.doc(`departments/${id}`) : db.collection('departments').doc();
+  if (id) {
+    const existing = await ref.get();
+    if (!existing.exists) throw new HttpsError('not-found', 'Département introuvable.');
+    assertSameOrg(c, existing.get('orgId'));
+  }
   const payload: Record<string, unknown> = {
     orgId: c.orgId, name, managerUid: managerUid ?? null, updatedAt: FieldValue.serverTimestamp(),
   };

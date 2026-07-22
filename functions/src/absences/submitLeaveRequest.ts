@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
 import { getClaims } from '../lib/rbac';
+import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const Schema = z.object({
@@ -55,6 +56,12 @@ export const submitLeaveRequest = onCall(async (req) => {
       currentApproverUid: null, decisions: [],
       createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
     });
+  });
+
+  await writeAudit({
+    actor: { uid: req.auth!.uid, claims: c },
+    action: 'submit_leave_request', resource: 'leaveRequests', resourceId: reqRef.id,
+    after: { type: d.type, days: d.days, status: 'soumis' },
   });
 
   return { ok: true, id: reqRef.id };

@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertDeptManagerOrHR } from '../lib/rbac';
+import { assertDeptManagerOrHR, assertSameOrg } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -20,6 +20,7 @@ export const updateEnrollment = onCall(async (req) => {
   const before = await ref.get();
   if (!before.exists) throw new HttpsError('not-found', 'Inscription introuvable.');
   const c = assertDeptManagerOrHR(req, before.get('departmentId'));
+  assertSameOrg(c, before.get('orgId'));
 
   const patch: Record<string, unknown> = { status, updatedAt: FieldValue.serverTimestamp() };
   if (status === 'en_cours') patch.startedAt = FieldValue.serverTimestamp();

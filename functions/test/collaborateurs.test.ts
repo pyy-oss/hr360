@@ -40,4 +40,12 @@ describe('upsertEmployee', () => {
     await expect(create(reqOf(dossier({ email: 'pas-un-email' }), rh, 'u_rh')))
       .rejects.toThrow();
   });
+
+  it('refuse la mise à jour d’un dossier d’une AUTRE organisation', async () => {
+    await db.doc('employees/e_foreign').set({
+      orgId: 'autre-org', departmentId: 'cyber', lastName: 'Autre',
+    });
+    await expect(create(reqOf({ id: 'e_foreign', jobTitle: 'Pirate' }, rh, 'u_rh')))
+      .rejects.toThrow();
+  });
 });

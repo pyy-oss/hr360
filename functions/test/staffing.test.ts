@@ -49,4 +49,13 @@ describe('upsertAssignment — garde anti sur-allocation', () => {
     const res: any = await assign(reqOf(base({ allocationPct: 30 }), mgrCyber, 'u_mgr'));
     expect(res.ok).toBe(true);
   });
+
+  it('refuse la mise à jour d’une affectation d’une AUTRE organisation', async () => {
+    await db.doc('assignments/a_foreign').set({
+      orgId: 'autre-org', departmentId: 'cyber', employeeId: 'e_collab', missionId: 'm1',
+      allocationPct: 20, startDate: '2026-01-01', endDate: '2026-06-30', status: 'active',
+    });
+    await expect(assign(reqOf(base({ id: 'a_foreign' }), drh, 'u_drh')))
+      .rejects.toThrow();
+  });
 });

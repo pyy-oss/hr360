@@ -79,6 +79,24 @@ describe('decideLeaveRequest', () => {
       .rejects.toThrow();
   });
 
+  it('refuse qu’un manager approuve SA PROPRE demande (ségrégation des tâches)', async () => {
+    await db.doc('leaveRequests/lr_self').set({
+      orgId: ORG, employeeId: 'e_mgr', departmentId: 'cyber',
+      type: 'conges_payes', status: 'soumis', days: 2,
+    });
+    await expect(decide(reqOf({ id: 'lr_self', decision: 'approuve' }, mgrCyber, 'u_mgr')))
+      .rejects.toThrow();
+  });
+
+  it('refuse une décision sur une demande d’une AUTRE organisation', async () => {
+    await db.doc('leaveRequests/lr_foreign').set({
+      orgId: 'autre-org', employeeId: 'e_x', departmentId: 'cyber',
+      type: 'conges_payes', status: 'soumis', days: 2,
+    });
+    await expect(decide(reqOf({ id: 'lr_foreign', decision: 'approuve' }, mgrCyber, 'u_mgr')))
+      .rejects.toThrow();
+  });
+
   it('refuse de re-traiter une demande déjà décidée', async () => {
     await decide(reqOf({ id: 'lr1', decision: 'approuve' }, mgrCyber, 'u_mgr'));
     await expect(decide(reqOf({ id: 'lr1', decision: 'refuse' }, mgrCyber, 'u_mgr')))

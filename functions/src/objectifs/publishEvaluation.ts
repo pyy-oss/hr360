@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { assertDeptManagerOrHR } from '../lib/rbac';
+import { assertDeptManagerOrHR, assertSameOrg } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -21,6 +21,7 @@ export const publishEvaluation = onCall(async (req) => {
     throw new HttpsError('failed-precondition', "L'évaluation doit être soumise avant publication.");
   }
   const c = assertDeptManagerOrHR(req, snap.get('departmentId'));
+  assertSameOrg(c, snap.get('orgId'));
 
   await ref.update({ status: 'publiee', publishedAt: FieldValue.serverTimestamp() });
   await writeAudit({

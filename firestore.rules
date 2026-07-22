@@ -64,11 +64,10 @@ service cloud.firestore {
                     isSelfEmp(resource.data.employeeId)
                   );
 
-      // Le collaborateur crée SA demande, en statut 'soumis' uniquement.
-      allow create: if signedIn()
-                    && sameOrg(request.resource.data)
-                    && isSelfEmp(request.resource.data.employeeId)
-                    && request.resource.data.status == 'soumis';
+      // Création UNIQUEMENT via submitLeaveRequest (Cloud Function) : elle revalide le
+      // solde et réserve les jours en 'pending' dans une transaction — invariants que
+      // les règles ne peuvent pas garantir. Le client ne crée jamais de demande en direct.
+      allow create: if false;
 
       // Le demandeur peut UNIQUEMENT annuler sa demande tant qu'aucune décision n'est prise.
       // Toute autre transition de statut (valider/refuser) passe par la Cloud Function.
@@ -141,11 +140,22 @@ service cloud.firestore {
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(resource.data.employeeId)
                   );
-      // Collaborateur : propose/ajuste SES objectifs en statut brouillon.
-      allow create, update: if sameOrg(request.resource.data) && (
+      // Collaborateur : propose SES objectifs en statut brouillon (création).
+      allow create: if sameOrg(request.resource.data) && (
                     hasAny(['super_admin','drh','rh']) ||
                     isDeptManager(request.resource.data.departmentId) ||
                     (isSelfEmp(request.resource.data.employeeId)
+                       && request.resource.data.status == 'brouillon')
+                  );
+      // Mise à jour : droits fondés sur le document EXISTANT (pas les données soumises).
+      // Le collaborateur ne modifie que SON objectif encore en brouillon et ne peut ni
+      // le réattribuer ni le sortir du brouillon (validation via validateObjective).
+      allow update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(resource.data.departmentId) ||
+                    (isSelfEmp(resource.data.employeeId)
+                       && unchanged('employeeId')
+                       && resource.data.status == 'brouillon'
                        && request.resource.data.status == 'brouillon')
                   );
       allow delete: if hasAny(['super_admin','drh']);
@@ -154,14 +164,16 @@ service cloud.firestore {
       // Le collaborateur ne voit son évaluation que si elle est publiée.
       allow read: if sameOrg(resource.data) && (
                     hasAny(['super_admin','drh','rh','lecture']) ||
-                    isDeptManager(resource.data.employeeId /* dept résolu côté data */) ||
+                    isDeptManager(resource.data.departmentId) ||
                     (isSelfEmp(resource.data.employeeId) && resource.data.status == 'publiee')
                   );
-      // Auto-évaluation par le collaborateur (self) ; évaluation par le manager.
-      // La publication (status -> publiee) passe par la fonction publishEvaluation.
-      allow update: if sameOrg(request.resource.data) && (
+      // Auto-évaluation par le collaborateur (self) ; évaluation par le manager/RH.
+      // Le statut est TOUJOURS inchangé côté client : toute transition (dont la
+      // publication -> 'publiee') passe par la fonction publishEvaluation + audit.
+      allow update: if sameOrg(request.resource.data) && unchanged('status') && (
                     hasAny(['super_admin','drh','rh']) ||
-                    (isSelfEmp(resource.data.employeeId) && unchanged('status') && unchanged('managerAssessment'))
+                    (isSelfEmp(resource.data.employeeId)
+                       && unchanged('employeeId') && unchanged('managerAssessment'))
                   );
       allow create, delete: if hasAny(['super_admin','drh','rh']);
     }
@@ -174,8 +186,11 @@ service cloud.firestore {
 
     // ---------- notifications ----------
     match /notifications/{id} {
-      allow read, update: if signedIn() && resource.data.toUid == request.auth.uid;
-      allow write: if serverOnly();
+      allow read: if signedIn() && resource.data.toUid == request.auth.uid;
+      // Le destinataire peut UNIQUEMENT marquer sa notification comme lue.
+      allow update: if signedIn() && resource.data.toUid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+      allow create, delete: if serverOnly();
     }
 
     // ---------- staffing (missions & affectations) ----------

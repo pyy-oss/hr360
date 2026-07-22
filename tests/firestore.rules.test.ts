@@ -70,22 +70,18 @@ describe('leaveRequests — dématérialisation & garde de statut', () => {
       });
     });
   });
-  it('collaborateur crée SA demande en statut soumis', async () => {
-    await assertSucceeds(addDoc(collection(collab(), 'leaveRequests'), {
+  it('création directe interdite au client (passe par submitLeaveRequest)', async () => {
+    // La fonction serveur revalide le solde et réserve le 'pending' en transaction ;
+    // aucune création directe n'est autorisée par les règles.
+    await assertFails(addDoc(collection(collab(), 'leaveRequests'), {
       orgId: ORG, employeeId: 'e_collab', departmentId: 'cyber',
       type: 'rtt', status: 'soumis', days: 1,
     }));
   });
-  it('collaborateur ne crée pas une demande pour un AUTRE', async () => {
-    await assertFails(addDoc(collection(collab(), 'leaveRequests'), {
-      orgId: ORG, employeeId: 'e_autre', departmentId: 'cyber',
-      type: 'rtt', status: 'soumis', days: 1,
-    }));
-  });
-  it('collaborateur ne crée pas une demande déjà « approuve »', async () => {
-    await assertFails(addDoc(collection(collab(), 'leaveRequests'), {
+  it('création directe interdite même à la RH', async () => {
+    await assertFails(addDoc(collection(rh(), 'leaveRequests'), {
       orgId: ORG, employeeId: 'e_collab', departmentId: 'cyber',
-      type: 'rtt', status: 'approuve', days: 1,
+      type: 'rtt', status: 'soumis', days: 1,
     }));
   });
   it('collaborateur peut annuler sa demande soumise', async () => {
@@ -142,6 +138,12 @@ describe('objectifs — brouillon par le collaborateur', () => {
   });
   it('manager du département met à jour un objectif de son équipe', async () => {
     await assertSucceeds(updateDoc(doc(mgrCyber(), 'objectives/o1'), { status: 'valide' }));
+  });
+  it('le collaborateur ne s’auto-valide pas son objectif existant', async () => {
+    await assertFails(updateDoc(doc(collab(), 'objectives/o1'), { status: 'valide' }));
+  });
+  it('le collaborateur ne réattribue pas son objectif à un autre', async () => {
+    await assertFails(updateDoc(doc(collab(), 'objectives/o1'), { employeeId: 'e_autre' }));
   });
 });
 
@@ -208,6 +210,12 @@ describe('notifications — chacun les siennes', () => {
   });
   it('un autre utilisateur ne les lit pas', async () => {
     await assertFails(getDoc(doc(lecture(), 'notifications/n_collab')));
+  });
+  it('le destinataire marque sa notification comme lue', async () => {
+    await assertSucceeds(updateDoc(doc(collab(), 'notifications/n_collab'), { read: true }));
+  });
+  it('le destinataire ne peut pas altérer d’autres champs (ex. toUid)', async () => {
+    await assertFails(updateDoc(doc(collab(), 'notifications/n_collab'), { toUid: 'u_autre' }));
   });
 });
 
