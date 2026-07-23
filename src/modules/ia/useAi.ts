@@ -7,6 +7,7 @@ import { useAuth } from '@/auth/AuthProvider';
 const assistantFn = httpsCallable(functions, 'aiAssistant');
 const scoreFn = httpsCallable(functions, 'scoreCandidate');
 const generateFn = httpsCallable(functions, 'generateContent');
+const predictFn = httpsCallable(functions, 'predictAttrition');
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string; }
 
@@ -41,6 +42,28 @@ export function useGenerateContent() {
     mutationFn: async (input: { kind: GenerationKind; positionId?: string; brief?: string; tone?: 'neutre' | 'chaleureux' | 'formel' }) => {
       const res = await generateFn(input);
       return (res.data as { ok: boolean; text: string }).text;
+    },
+  });
+}
+
+export interface PredictionResult {
+  riskLevel: 'faible' | 'modere' | 'eleve';
+  factors: { factor: string; note: string }[];
+  actions: { action: string; note: string }[];
+  caveat: string;
+}
+export interface PredictionAggregates {
+  headcount: number; byStatus: Record<string, number>;
+  departuresInProgress: number; pendingLeaveRequests: number; openPositions: number;
+  engagement: { question: string; avg: number }[] | string; engagementResponses: number;
+}
+
+/** Analyse de rétention agrégée & anonyme (DRH). */
+export function usePredictAttrition() {
+  return useMutation({
+    mutationFn: async () => {
+      const res = await predictFn({});
+      return res.data as { ok: boolean; result: PredictionResult; aggregates: PredictionAggregates };
     },
   });
 }

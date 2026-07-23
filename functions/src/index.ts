@@ -52,6 +52,7 @@ export { getEngagementResults } from './engagement/getEngagementResults';
 export { aiAssistant } from './ai/aiAssistant';
 export { scoreCandidate } from './ai/scoreCandidate';
 export { generateContent } from './ai/generateContent';
+export { predictAttrition } from './ai/predictAttrition';
 
 // Objectifs & évaluations
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
