@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { LeaveRequestInput } from '@/types';
 
-const submitFn = httpsCallable(functions, 'submitLeaveRequest');
-const decideFn = httpsCallable(functions, 'decideLeaveRequest');
-const seedFn = httpsCallable(functions, 'seedDemoData');
+const submitFn = callable('submitLeaveRequest');
+const decideFn = callable('decideLeaveRequest');
+const seedFn = callable('seedDemoData');
 
 export interface LeaveRequestDoc {
   id: string; employeeId: string; employeeName?: string; departmentId?: string;
@@ -82,19 +81,21 @@ export function useSeedDemo() {
 
 /** Mes demandes (paginées). Les règles Firestore limitent déjà à ce que je peux voir. */
 export function useMyLeaveRequests() {
-  const { employeeId } = useAuth();
+  const { orgId, employeeId } = useAuth();
   return useQuery({
-    queryKey: ['leave', 'mine', employeeId],
-    enabled: !!employeeId,
+    queryKey: ['leave', 'mine', orgId, employeeId],
+    enabled: !!employeeId && !!orgId,
     queryFn: async () => {
       const q = query(
         collection(db, 'leaveRequests'),
+        where('orgId', '==', orgId),
         where('employeeId', '==', employeeId),
-        orderBy('startDate', 'desc'),
         limit(25),
       );
       const snap = await getDocs(q);
-      return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
+        .sort((a, b) => String((b as { startDate?: string }).startDate ?? '').localeCompare(String((a as { startDate?: string }).startDate ?? '')));
     },
   });
 }

@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { PositionInput, CandidateInput, CandidateStageUpdate, CandidateStage } from '@/types';
 
-const upsertPositionFn = httpsCallable(functions, 'upsertPosition');
-const upsertCandidateFn = httpsCallable(functions, 'upsertCandidate');
-const advanceStageFn = httpsCallable(functions, 'advanceCandidateStage');
+const upsertPositionFn = callable('upsertPosition');
+const upsertCandidateFn = callable('upsertCandidate');
+const advanceStageFn = callable('advanceCandidateStage');
 
 export interface PositionRow {
   id: string; title: string; departmentId: string; level: string;

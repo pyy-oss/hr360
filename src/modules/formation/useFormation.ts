@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { TrainingPlanInput, EnrollmentUpdateInput } from '@/types';
 
-const createPlanFn = httpsCallable(functions, 'createTrainingPlan');
-const updateEnrollmentFn = httpsCallable(functions, 'updateEnrollment');
+const createPlanFn = callable('createTrainingPlan');
+const updateEnrollmentFn = callable('updateEnrollment');
 
 export interface TrainingPlanRow { id: string; name: string; departmentId?: string; progressPct: number; }
 export interface CatalogRow { id: string; name: string; tag?: string; }
@@ -39,15 +38,15 @@ export function useTrainingCatalog() {
 
 /** Besoins de formation de mon département (paginés). */
 export function useDepartmentNeeds() {
-  const { departmentId } = useAuth();
+  const { orgId, departmentId } = useAuth();
   return useQuery({
-    queryKey: ['training', 'needs', departmentId],
-    enabled: !!departmentId,
+    queryKey: ['training', 'needs', orgId, departmentId],
+    enabled: !!departmentId && !!orgId,
     queryFn: async () => {
       const q = query(
         collection(db, 'trainingNeeds'),
+        where('orgId', '==', orgId),
         where('departmentId', '==', departmentId),
-        orderBy('priority'),
         limit(50),
       );
       const snap = await getDocs(q);
@@ -58,19 +57,22 @@ export function useDepartmentNeeds() {
 
 /** Mes inscriptions (collaborateur). */
 export function useMyEnrollments() {
-  const { employeeId } = useAuth();
+  const { orgId, employeeId } = useAuth();
   return useQuery({
-    queryKey: ['training', 'enrollments', employeeId],
-    enabled: !!employeeId,
+    queryKey: ['training', 'enrollments', orgId, employeeId],
+    enabled: !!employeeId && !!orgId,
     queryFn: async () => {
       const q = query(
         collection(db, 'enrollments'),
+        where('orgId', '==', orgId),
         where('employeeId', '==', employeeId),
-        where('status', 'in', ['inscrit', 'en_cours', 'termine', 'certifie']),
         limit(50),
       );
       const snap = await getDocs(q);
-      return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const active = ['inscrit', 'en_cours', 'termine', 'certifie'];
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
+        .filter((e) => active.includes(String((e as { status?: string }).status)));
     },
   });
 }

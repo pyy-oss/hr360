@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { MissionInput, AssignmentInput } from '@/types';
 
-const upsertMissionFn = httpsCallable(functions, 'upsertMission');
-const upsertAssignmentFn = httpsCallable(functions, 'upsertAssignment');
+const upsertMissionFn = callable('upsertMission');
+const upsertAssignmentFn = callable('upsertAssignment');
 
 export interface MissionRow {
   id: string; name: string; client: string; departmentId: string; status: string;
@@ -19,17 +18,20 @@ export interface AssignmentRow {
 
 /** Missions du département (manager) ou de toute l'organisation (RH/DRH). */
 export function useMissions() {
-  const { role, departmentId } = useAuth();
+  const { orgId, role, departmentId } = useAuth();
   const scoped = role === 'manager' ? departmentId : undefined;
   return useQuery<MissionRow[]>({
-    queryKey: ['staffing', 'missions', scoped ?? 'all'],
+    queryKey: ['staffing', 'missions', orgId, scoped ?? 'all'],
+    enabled: !!orgId,
     queryFn: async () => {
       const base = collection(db, 'missions');
       const q = scoped
-        ? query(base, where('departmentId', '==', scoped), orderBy('startDate', 'desc'), limit(100))
-        : query(base, orderBy('startDate', 'desc'), limit(100));
+        ? query(base, where('orgId', '==', orgId), where('departmentId', '==', scoped), limit(100))
+        : query(base, where('orgId', '==', orgId), limit(100));
       const snap = await getDocs(q);
-      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MissionRow, 'id'>) }));
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<MissionRow, 'id'>) }))
+        .sort((a, b) => String(b.startDate ?? '').localeCompare(String(a.startDate ?? '')));
     },
   });
 }

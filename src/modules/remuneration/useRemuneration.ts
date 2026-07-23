@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, limit, getDocs, getDoc, doc } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { SalaryBandInput, CompensationInput } from '@/types';
 
-const upsertBandFn = httpsCallable(functions, 'upsertSalaryBand');
-const setCompFn = httpsCallable(functions, 'setCompensation');
+const upsertBandFn = callable('upsertSalaryBand');
+const setCompFn = callable('setCompensation');
 
 export interface SalaryBandRow {
   id: string; level: string; label: string;

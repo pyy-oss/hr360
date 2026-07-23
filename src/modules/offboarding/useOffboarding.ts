@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { OffboardingStartInput, OffboardingTaskUpdate } from '@/types';
 
-const startFn = httpsCallable(functions, 'startOffboarding');
-const updateTaskFn = httpsCallable(functions, 'updateOffboardingTask');
-const closeFn = httpsCallable(functions, 'closeOffboarding');
+const startFn = callable('startOffboarding');
+const updateTaskFn = callable('updateOffboardingTask');
+const closeFn = callable('closeOffboarding');
 
 export interface OffboardingTask { key: string; label: string; done: boolean; }
 export interface OffboardingRow {

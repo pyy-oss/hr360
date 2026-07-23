@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import {
-  collection, query, where, orderBy, limit, getDocs, Timestamp,
+  collection, query, where, limit, getDocs, Timestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { functions, db, storage } from '@/lib/firebase';
+import { callable, db, storage } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { DocumentCategory } from '@/types';
 import { z } from 'zod';
@@ -12,8 +11,8 @@ import { z } from 'zod';
 // Catégorie stockée = z.infer de l'enum DocumentCategory partagé (types/documents).
 type Category = z.infer<typeof DocumentCategory>;
 
-const registerFn = httpsCallable(functions, 'registerEmployeeDocument');
-const deleteFn = httpsCallable(functions, 'deleteEmployeeDocument');
+const registerFn = callable('registerEmployeeDocument');
+const deleteFn = callable('deleteEmployeeDocument');
 
 export interface DocumentRow {
   id: string;
@@ -42,36 +41,41 @@ function sanitizeFileName(name: string): string {
 }
 
 /** Documents du collaborateur connecté (règles : lecture de SES propres documents). */
+function sortByCreatedDesc(rows: DocumentRow[]): DocumentRow[] {
+  return [...rows].sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+}
+
 export function useMyDocuments() {
-  const { employeeId } = useAuth();
+  const { orgId, employeeId } = useAuth();
   return useQuery<DocumentRow[]>({
-    queryKey: ['documents', 'mine', employeeId],
-    enabled: !!employeeId,
+    queryKey: ['documents', 'mine', orgId, employeeId],
+    enabled: !!employeeId && !!orgId,
     queryFn: async () => {
       const snap = await getDocs(query(
         collection(db, 'employeeDocuments'),
+        where('orgId', '==', orgId),
         where('employeeId', '==', employeeId),
-        orderBy('createdAt', 'desc'),
         limit(200),
       ));
-      return mapDocs(snap);
+      return sortByCreatedDesc(mapDocs(snap));
     },
   });
 }
 
 /** Documents d'un employé donné (RH/DRH). */
 export function useEmployeeDocuments(employeeId?: string) {
+  const { orgId } = useAuth();
   return useQuery<DocumentRow[]>({
-    queryKey: ['documents', 'employee', employeeId],
-    enabled: !!employeeId,
+    queryKey: ['documents', 'employee', orgId, employeeId],
+    enabled: !!employeeId && !!orgId,
     queryFn: async () => {
       const snap = await getDocs(query(
         collection(db, 'employeeDocuments'),
+        where('orgId', '==', orgId),
         where('employeeId', '==', employeeId),
-        orderBy('createdAt', 'desc'),
         limit(200),
       ));
-      return mapDocs(snap);
+      return sortByCreatedDesc(mapDocs(snap));
     },
   });
 }

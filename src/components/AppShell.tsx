@@ -72,10 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M3 12h18M3 18h18" /></svg>
             </button>
             <div className="crumb">Neurones IA · <b>{crumb}</b></div>
-            <div className="poste-pill">
-              <span className="dot" />Poste actif&nbsp; <b>Consultant Cybersécurité — Confirmé</b>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m6 9 6 6 6-6" /></svg>
-            </div>
+            <div style={{ flex: 1 }} />
             <NotificationsBell />
           </div>
           <div className="content">

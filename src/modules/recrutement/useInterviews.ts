@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { InterviewScheduleInput, InterviewUpdateInput } from '@/types';
 
-const scheduleInterviewFn = httpsCallable(functions, 'scheduleInterview');
-const updateInterviewFn = httpsCallable(functions, 'updateInterview');
+const scheduleInterviewFn = callable('scheduleInterview');
+const updateInterviewFn = callable('updateInterview');
 
 export interface InterviewRow {
   id: string;

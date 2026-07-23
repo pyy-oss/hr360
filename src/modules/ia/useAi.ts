@@ -1,17 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { KnowledgeDocInput } from '@/types';
 
-const assistantFn = httpsCallable(functions, 'aiAssistant');
-const scoreFn = httpsCallable(functions, 'scoreCandidate');
-const generateFn = httpsCallable(functions, 'generateContent');
-const predictFn = httpsCallable(functions, 'predictAttrition');
-const askKnowledgeFn = httpsCallable(functions, 'askKnowledge');
-const upsertKnowledgeFn = httpsCallable(functions, 'upsertKnowledgeDoc');
-const analyzeSkillsFn = httpsCallable(functions, 'analyzeSkills');
+const assistantFn = callable('aiAssistant');
+const scoreFn = callable('scoreCandidate');
+const generateFn = callable('generateContent');
+const predictFn = callable('predictAttrition');
+const askKnowledgeFn = callable('askKnowledge');
+const upsertKnowledgeFn = callable('upsertKnowledgeDoc');
+const analyzeSkillsFn = callable('analyzeSkills');
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string; }
 

@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes } from 'firebase/storage';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db, storage } from '@/lib/firebase';
+import { callable, db, storage } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 
-const startFn = httpsCallable(functions, 'startIngestionJob');
-const processFn = httpsCallable(functions, 'processIngestionJob');
+const startFn = callable('startIngestionJob');
+const processFn = callable('processIngestionJob');
 
 export interface IngestionJobRow {
   id: string;

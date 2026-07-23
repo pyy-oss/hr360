@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import {
-  collection, query, where, orderBy, limit, getDocs, doc, getDoc,
+  collection, query, where, limit, getDocs, doc, getDoc,
 } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { EmployeeInput, EmployeeUpdate, DepartmentInput } from '@/types';
 
-const upsertEmployeeFn = httpsCallable(functions, 'upsertEmployee');
-const upsertDepartmentFn = httpsCallable(functions, 'upsertDepartment');
-const linkAccountFn = httpsCallable(functions, 'linkEmployeeAccount');
+const upsertEmployeeFn = callable('upsertEmployee');
+const upsertDepartmentFn = callable('upsertDepartment');
+const linkAccountFn = callable('linkEmployeeAccount');
 
 export interface EmployeeRow {
   id: string; firstName: string; lastName: string; email: string;
@@ -22,19 +21,24 @@ export interface EmployeeRow {
  * que son propre département (les règles Firestore l'imposent, la requête s'y aligne).
  */
 export function useDirectory(departmentFilter?: string) {
-  const { role, departmentId } = useAuth();
+  const { orgId, role, departmentId } = useAuth();
   const scopedDept =
     role === 'manager' ? departmentId : (departmentFilter || undefined);
 
   return useQuery<EmployeeRow[]>({
-    queryKey: ['directory', scopedDept ?? 'all'],
+    queryKey: ['directory', orgId, scopedDept ?? 'all'],
+    enabled: !!orgId,
     queryFn: async () => {
+      // Toute requête liste DOIT être scopée à l'organisation : les règles Firestore
+      // exigent sameOrg, et sans ce filtre la requête est rejetée en bloc (projet partagé).
       const base = collection(db, 'employees');
       const q = scopedDept
-        ? query(base, where('departmentId', '==', scopedDept), orderBy('lastName'), limit(200))
-        : query(base, orderBy('lastName'), limit(200));
+        ? query(base, where('orgId', '==', orgId), where('departmentId', '==', scopedDept), limit(200))
+        : query(base, where('orgId', '==', orgId), limit(200));
       const snap = await getDocs(q);
-      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<EmployeeRow, 'id'>) }));
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<EmployeeRow, 'id'>) }))
+        .sort((a, b) => a.lastName.localeCompare(b.lastName));
     },
   });
 }
@@ -51,11 +55,15 @@ export function useEmployee(id?: string) {
 }
 
 export function useDepartments() {
+  const { orgId } = useAuth();
   return useQuery({
-    queryKey: ['departments'],
+    queryKey: ['departments', orgId],
+    enabled: !!orgId,
     queryFn: async () => {
-      const snap = await getDocs(query(collection(db, 'departments'), orderBy('name'), limit(100)));
-      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as { name: string }) }));
+      const snap = await getDocs(query(collection(db, 'departments'), where('orgId', '==', orgId), limit(100)));
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as { name: string }) }))
+        .sort((a, b) => a.name.localeCompare(b.name));
     },
   });
 }
