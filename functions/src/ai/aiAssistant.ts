@@ -4,6 +4,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { getClaims } from '../lib/rbac';
 import { getAnthropic, AI_MODEL, ANTHROPIC_API_KEY, textOf } from './client';
 import { logAiInvocation } from './governance';
+import { assertAndCountAiQuota } from './quota';
 
 const Schema = z.object({
   message: z.string().min(1).max(4000),
@@ -39,6 +40,7 @@ export const aiAssistant = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (req) 
     { role: 'user' as const, content: p.data.message },
   ];
 
+  await assertAndCountAiQuota(req.auth!.uid, c.orgId);
   const started = Date.now();
   try {
     const resp = await getAnthropic().messages.create({

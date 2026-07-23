@@ -302,6 +302,12 @@ service cloud.firestore {
       allow write: if serverOnly();
     }
 
+    // ---------- IA : quota journalier d'appels par utilisateur ----------
+    match /aiQuota/{id} {
+      // Compteur anti-abus/coût : lecture et écriture serveur uniquement.
+      allow read, write: if serverOnly();
+    }
+
     // Par défaut : tout est refusé.
     match /{document=**} { allow read, write: if false; }
   }

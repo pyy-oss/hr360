@@ -5,6 +5,7 @@ import { db } from '../lib/admin';
 import { assertRole } from '../lib/rbac';
 import { getAnthropic, AI_MODEL, ANTHROPIC_API_KEY, textOf } from './client';
 import { logAiInvocation } from './governance';
+import { assertAndCountAiQuota } from './quota';
 
 const Schema = z.object({}).optional();
 
@@ -93,6 +94,7 @@ export const predictAttrition = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (
     messages: [{ role: 'user', content: userPrompt }],
   };
 
+  await assertAndCountAiQuota(req.auth!.uid, c.orgId);
   const started = Date.now();
   try {
     const resp = (await getAnthropic().messages.create(params)) as Anthropic.Message;
