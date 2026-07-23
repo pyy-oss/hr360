@@ -316,6 +316,13 @@ service cloud.firestore {
       allow write: if serverOnly();
     }
 
+    // ---------- métriques : instantanés datés (tendances RH) ----------
+    match /metricSnapshots/{id} {
+      // Lecture pilotage/direction (agrégats, aucune donnée nominative). Écriture serveur.
+      allow read:  if sameOrg(resource.data) && hasAny(['super_admin','drh','rh','lecture','dirigeant']);
+      allow write: if serverOnly();
+    }
+
     // ---------- IA : quota journalier d'appels par utilisateur ----------
     match /aiQuota/{id} {
       // Compteur anti-abus/coût : lecture et écriture serveur uniquement.

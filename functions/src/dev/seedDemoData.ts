@@ -137,6 +137,16 @@ export const seedDemoData = onCall(async (req) => {
     },
   ];
 
+  // Historique d'instantanés (tendances) — 6 points mensuels de démonstration.
+  const metricSnapshots = [
+    { id: 'snap_1', day: '2026-02-01', headcount: 18, essai: 3, confirme: 15, sortant: 0, openPositions: 4, departuresInProgress: 0, pendingLeave: 2, activeCandidates: 21 },
+    { id: 'snap_2', day: '2026-03-01', headcount: 19, essai: 2, confirme: 17, sortant: 0, openPositions: 5, departuresInProgress: 1, pendingLeave: 3, activeCandidates: 28 },
+    { id: 'snap_3', day: '2026-04-01', headcount: 21, essai: 3, confirme: 18, sortant: 0, openPositions: 6, departuresInProgress: 0, pendingLeave: 1, activeCandidates: 24 },
+    { id: 'snap_4', day: '2026-05-01', headcount: 22, essai: 2, confirme: 20, sortant: 0, openPositions: 5, departuresInProgress: 1, pendingLeave: 4, activeCandidates: 19 },
+    { id: 'snap_5', day: '2026-06-01', headcount: 23, essai: 4, confirme: 19, sortant: 0, openPositions: 7, departuresInProgress: 1, pendingLeave: 2, activeCandidates: 31 },
+    { id: 'snap_6', day: '2026-07-01', headcount: 24, essai: 3, confirme: 20, sortant: 1, openPositions: 6, departuresInProgress: 1, pendingLeave: 3, activeCandidates: 26 },
+  ];
+
   const pulseQuestions = [
     { key: 'sens', label: 'Sens & fierté' },
     { key: 'management', label: 'Management de proximité' },
@@ -179,6 +189,7 @@ export const seedDemoData = onCall(async (req) => {
   for (const cp of compensations) batch.set(db.doc(`compensations/${cp.id}`), { orgId, ...cp, updatedAt: now }, { merge: true });
   for (const ob of offboardings) batch.set(db.doc(`offboardings/${ob.id}`), { orgId, ...ob, createdAt: now, updatedAt: now }, { merge: true });
   for (const on of onboardings) batch.set(db.doc(`onboardings/${on.id}`), { orgId, ...on, createdAt: now, updatedAt: now }, { merge: true });
+  for (const sn of metricSnapshots) batch.set(db.doc(`metricSnapshots/${orgId}_${sn.day}`), { orgId, ...sn, capturedAt: now }, { merge: true });
   for (const sv of engagementSurveys) batch.set(db.doc(`engagementSurveys/${sv.id}`), { orgId, ...sv, createdAt: now, updatedAt: now }, { merge: true });
   for (const er of engagementResponses) batch.set(db.doc(`engagementResponses/${er.id}`), { orgId, ...er, submittedAt: now }, { merge: true });
   for (const kd of knowledgeDocs) batch.set(db.doc(`knowledgeDocs/${kd.id}`), { orgId, ...kd, createdAt: now, updatedAt: now }, { merge: true });
@@ -199,6 +210,7 @@ export const seedDemoData = onCall(async (req) => {
     evaluations: evaluations.length,
     salaryBands: salaryBands.length, compensations: compensations.length,
     offboardings: offboardings.length, onboardings: onboardings.length,
+    metricSnapshots: metricSnapshots.length,
     engagementSurveys: engagementSurveys.length, engagementResponses: engagementResponses.length,
     knowledgeDocs: knowledgeDocs.length,
   };

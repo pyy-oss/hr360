@@ -18,6 +18,7 @@ export { linkEmployeeAccount } from './collaborateurs/linkEmployeeAccount';
 export { submitLeaveRequest } from './absences/submitLeaveRequest';
 export { decideLeaveRequest } from './absences/decideLeaveRequest';
 export { onLeaveDecision } from './absences/onLeaveDecision';
+export { onLeaveSubmitted } from './absences/onLeaveSubmitted';
 
 // Formation
 export { createTrainingPlan } from './formation/createTrainingPlan';
@@ -41,6 +42,9 @@ export { setCompensation } from './remuneration/setCompensation';
 export { startOffboarding } from './offboarding/startOffboarding';
 export { updateOffboardingTask } from './offboarding/updateOffboardingTask';
 export { closeOffboarding } from './offboarding/closeOffboarding';
+
+// Métriques (instantanés datés pour les tendances)
+export { captureMetricsSnapshot } from './metrics/captureMetricsSnapshot';
 
 // Onboarding & période d'essai (intégration)
 export { startOnboarding } from './onboarding/startOnboarding';

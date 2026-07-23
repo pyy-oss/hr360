@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
+import { NotificationsBell } from './NotificationsBell';
 import { navForRole, CRUMB } from './nav';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -75,9 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="dot" />Poste actif&nbsp; <b>Consultant Cybersécurité — Confirmé</b>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m6 9 6 6 6-6" /></svg>
             </div>
-            <button className="icon-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>
-            </button>
+            <NotificationsBell />
           </div>
           <div className="content">
             <div className="screen" key={pathname}>{children}</div>
