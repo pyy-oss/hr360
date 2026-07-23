@@ -4,6 +4,7 @@ import { useDirectory, type EmployeeRow } from '@/modules/collaborateurs/useColl
 import { useSeedDemo } from '@/modules/absences/useLeave';
 import { useAuth } from '@/auth/AuthProvider';
 import { NewEmployeeForm } from './NewEmployeeForm';
+import { DepartmentsCard } from '@/modules/collaborateurs/DepartmentsCard';
 
 function statusChip(status: string) {
   if (status === 'confirme') return <span className="chip on">Confirmé</span>;
@@ -81,6 +82,8 @@ export function CollaborateursPage() {
           </div>
         </div>
       </div>
+
+      <DepartmentsCard />
     </>
   );
 }
