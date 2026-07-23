@@ -6,6 +6,9 @@ import { DashboardPage } from '@/modules/dashboard/DashboardPage';
 import { BoiteRhPage } from '@/modules/recrutement/BoiteRhPage';
 import { VivierPage } from '@/modules/recrutement/VivierPage';
 import { ScoringPage } from '@/modules/recrutement/ScoringPage';
+import { ProfilPage } from '@/modules/recrutement/ProfilPage';
+import { DecisionPage } from '@/modules/recrutement/DecisionPage';
+import { SupportsPage } from '@/modules/recrutement/SupportsPage';
 import { Placeholder } from '@/components/Placeholder';
 import { NAV } from '@/components/nav';
 
@@ -20,6 +23,9 @@ export function App() {
     '/boite-rh': <BoiteRhPage />,
     '/vivier': <VivierPage />,
     '/scoring': <ScoringPage />,
+    '/profil': <ProfilPage />,
+    '/decision': <DecisionPage />,
+    '/supports': <SupportsPage />,
   };
 
   return (
