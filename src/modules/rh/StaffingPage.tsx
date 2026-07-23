@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mini, Kpi } from '@/components/mq';
+import { Mini, Kpi, ErrBar } from '@/components/mq';
 import { useMissions, useAllAssignments } from '@/modules/staffing/useStaffing';
 import { useEmployeesMap, useSeedDemo } from '@/modules/absences/useLeave';
 import { useAuth } from '@/auth/AuthProvider';
@@ -52,6 +52,8 @@ export function StaffingPage() {
       </div>
 
       {showForm && <NewMissionForm onDone={() => setShowForm(false)} />}
+
+      <ErrBar error={missions.error ?? assignments.error} prefix="Chargement du staffing impossible." />
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>

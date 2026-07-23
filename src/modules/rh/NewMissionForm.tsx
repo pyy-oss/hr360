@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MissionInput } from '@/types';
+import { Field } from '@/components/mq';
 import { useUpsertMission } from '@/modules/staffing/useStaffing';
 import { useDepartments } from '@/modules/collaborateurs/useCollaborateurs';
 
@@ -25,26 +26,24 @@ export function NewMissionForm({ onDone }: { onDone: () => void }) {
       <div className="card-head"><h3>Nouvelle mission</h3></div>
       <div className="card-pad">
         <div className="form-grid">
-          <div><label className="flabel">Intitulé</label><input className="field" value={f.name} onChange={(e) => set('name', e.target.value)} placeholder="Audit sécurité…" /></div>
-          <div><label className="flabel">Client</label><input className="field" value={f.client} onChange={(e) => set('client', e.target.value)} placeholder="Banque régionale" /></div>
-          <div>
-            <label className="flabel">Département</label>
+          <Field label="Intitulé"><input className="field" value={f.name} onChange={(e) => set('name', e.target.value)} placeholder="Audit sécurité…" /></Field>
+          <Field label="Client"><input className="field" value={f.client} onChange={(e) => set('client', e.target.value)} placeholder="Banque régionale" /></Field>
+          <Field label="Département">
             <select className="field" value={f.departmentId} onChange={(e) => set('departmentId', e.target.value)}>
               <option value="">— choisir —</option>
               {(depts.data ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="flabel">Statut</label>
+          </Field>
+          <Field label="Statut">
             <select className="field" value={f.status} onChange={(e) => set('status', e.target.value)}>
               <option value="prospect">Prospect</option><option value="active">Active</option>
               <option value="suspendue">Suspendue</option><option value="terminee">Terminée</option>
             </select>
-          </div>
-          <div><label className="flabel">Début</label><input className="field" type="date" value={f.startDate} onChange={(e) => set('startDate', e.target.value)} /></div>
-          <div><label className="flabel">Fin (optionnel)</label><input className="field" type="date" value={f.endDate} onChange={(e) => set('endDate', e.target.value)} /></div>
+          </Field>
+          <Field label="Début"><input className="field" type="date" value={f.startDate} onChange={(e) => set('startDate', e.target.value)} /></Field>
+          <Field label="Fin (optionnel)"><input className="field" type="date" value={f.endDate} onChange={(e) => set('endDate', e.target.value)} /></Field>
         </div>
-        {err && <div className="ferr">{err}</div>}
+        {err && <div className="ferr" role="alert">{err}</div>}
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           <button className="btn btn-primary" disabled={upsert.isPending} onClick={submit}>{upsert.isPending ? 'Enregistrement…' : 'Créer la mission'}</button>
           <button className="btn btn-ghost" onClick={onDone}>Annuler</button>

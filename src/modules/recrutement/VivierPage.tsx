@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ErrBar } from '@/components/mq';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSeedDemo } from '@/modules/absences/useLeave';
 import {
@@ -56,6 +57,9 @@ export function VivierPage() {
       </div>
 
       {showForm && <NewCandidateForm onDone={() => setShowForm(false)} />}
+
+      <ErrBar error={candidates.error} prefix="Chargement du vivier impossible." />
+      <ErrBar error={advance.error} prefix="Transition impossible." />
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>

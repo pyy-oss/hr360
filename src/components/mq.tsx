@@ -1,4 +1,26 @@
-import { ReactNode } from 'react';
+import { ReactNode, ReactElement, cloneElement, useId } from 'react';
+
+/**
+ * Champ de formulaire accessible : associe le label à son contrôle via
+ * htmlFor/id (généré). L'unique enfant (input/select) reçoit l'`id` et
+ * `aria-invalid` si `invalid`. Style hérité de la maquette (.flabel/.field).
+ */
+export function Field({ label, children, hint, invalid, style }: {
+  label: string;
+  children: ReactElement;
+  hint?: string;
+  invalid?: boolean;
+  style?: React.CSSProperties;
+}) {
+  const id = useId();
+  return (
+    <div style={style}>
+      <label className="flabel" htmlFor={id}>{label}</label>
+      {cloneElement(children, { id, 'aria-invalid': invalid || undefined })}
+      {hint && <div style={{ fontSize: 11, color: 'var(--muted-2)', marginTop: 3 }}>{hint}</div>}
+    </div>
+  );
+}
 
 /** Carte KPI de la maquette. */
 export function Kpi({ val, lab, delta, deltaTone = 'up', icon }: {
@@ -32,6 +54,22 @@ export function StateChip({ tone, children }: { tone: 'ok' | 'mid' | 'low'; chil
     ? { background: 'var(--mid-soft)', color: 'var(--mid)' }
     : { background: 'var(--low-soft)', color: 'var(--low)' };
   return <span className="chip ref-w" style={{ marginLeft: 'auto', border: 'none', ...c }}>{children}</span>;
+}
+
+/**
+ * Bandeau d'erreur réutilisable. À placer sous l'en-tête d'une page pour
+ * surfacer une erreur de chargement (query) ou d'action (mutation) plutôt
+ * que d'échouer en silence. N'affiche rien si `error` est nul.
+ */
+export function ErrBar({ error, prefix }: { error: unknown; prefix?: string }) {
+  if (!error) return null;
+  const msg = error instanceof Error ? error.message : String(error);
+  return (
+    <div className="alert" role="alert" style={{ marginBottom: 16, background: 'var(--low-soft)', color: 'var(--low)', border: 'none' }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
+      <div>{prefix ?? 'Une erreur est survenue.'} {msg}</div>
+    </div>
+  );
 }
 
 /** Timeline verticale. */

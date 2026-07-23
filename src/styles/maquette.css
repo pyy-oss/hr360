@@ -205,5 +205,13 @@
   .mq .sidebar.open{left:0}
   .mq .g4{grid-template-columns:repeat(2,1fr)}.mq .g2,.mq .g3{grid-template-columns:1fr}
   .mq .menu-toggle{display:grid!important}
+  /* Les en-têtes de page « titre + bouton » passent à la ligne proprement. */
+  .mq .page-head[style*="flex"]{flex-wrap:wrap;gap:12px}
+  /* Les grilles de formulaire repassent sur une colonne. */
+  .mq .form-grid{grid-template-columns:1fr}
+  .mq .form-grid>div[style*="grid-column"]{grid-column:1!important}
+}
+@media(max-width:560px){
+  .mq .g4{grid-template-columns:1fr}
 }
 .mq .menu-toggle{display:none}
