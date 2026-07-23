@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Mini, Kpi } from '@/components/mq';
 import { useMissions, useAllAssignments } from '@/modules/staffing/useStaffing';
 import { useEmployeesMap, useSeedDemo } from '@/modules/absences/useLeave';
 import { useAuth } from '@/auth/AuthProvider';
+import { NewMissionForm } from './NewMissionForm';
 
 function allocBg(pct: number) {
   if (pct >= 100) return 'var(--signal-deep)';
@@ -31,14 +33,25 @@ export function StaffingPage() {
   const tace = as.length ? Math.round(as.reduce((s, a) => s + (a.allocationPct ?? 0), 0) / as.length) : 0;
   const empty = !missions.isLoading && !assignments.isLoading && ms.length === 0 && as.length === 0;
   const isSuperAdmin = role === 'super_admin';
+  const canCreate = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const [showForm, setShowForm] = useState(false);
 
   return (
     <>
-      <div className="page-head">
-        <h1>Staffing &amp; plan de charge</h1>
-        <p>Le cœur d'une société de services : affecter les bons consultants aux bonnes missions, suivre le taux d'occupation et anticiper les tensions.</p>
-        <span className="feat" style={{ marginTop: 8, display: 'inline-block' }}>Module #30 · données réelles</span>
+      <div className="page-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h1>Staffing &amp; plan de charge</h1>
+          <p>Le cœur d'une société de services : affecter les bons consultants aux bonnes missions, suivre le taux d'occupation et anticiper les tensions.</p>
+          <span className="feat" style={{ marginTop: 8, display: 'inline-block' }}>Module #30 · données réelles</span>
+        </div>
+        {canCreate && !showForm && (
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>Nouvelle mission
+          </button>
+        )}
       </div>
+
+      {showForm && <NewMissionForm onDone={() => setShowForm(false)} />}
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>

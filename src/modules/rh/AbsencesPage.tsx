@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Mini } from '@/components/mq';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   usePendingLeave, useLeaveBalances, useEmployeesMap, useDecideLeave, useSeedDemo,
 } from '@/modules/absences/useLeave';
+import { NewLeaveForm } from '@/modules/absences/NewLeaveForm';
 
 const TYPE_LABEL: Record<string, string> = {
   conges_payes: 'Congés payés', rtt: 'RTT', maladie: 'Maladie',
@@ -11,13 +13,14 @@ const TYPE_LABEL: Record<string, string> = {
 const BAL_BG = ['var(--signal)', 'var(--signal)', 'var(--mid)', 'var(--signal-deep)'];
 
 export function AbsencesPage() {
-  const { role } = useAuth();
+  const { role, employeeId } = useAuth();
   const pending = usePendingLeave();
   const balances = useLeaveBalances();
   const emap = useEmployeesMap();
   const decide = useDecideLeave();
   const seed = useSeedDemo();
   const isSuperAdmin = role === 'super_admin';
+  const [showForm, setShowForm] = useState(false);
 
   const requests = pending.data ?? [];
   const bals = balances.data ?? [];
@@ -25,11 +28,20 @@ export function AbsencesPage() {
 
   return (
     <>
-      <div className="page-head">
-        <h1>Absences &amp; congés</h1>
-        <p>Demandes, validations et soldes en un seul flux — avec une vue de disponibilité pour ne jamais staffer un absent.</p>
-        <span className="feat" style={{ marginTop: 8, display: 'inline-block' }}>Module #31 · données réelles</span>
+      <div className="page-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h1>Absences &amp; congés</h1>
+          <p>Demandes, validations et soldes en un seul flux — avec une vue de disponibilité pour ne jamais staffer un absent.</p>
+          <span className="feat" style={{ marginTop: 8, display: 'inline-block' }}>Module #31 · données réelles</span>
+        </div>
+        {employeeId && !showForm && (
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>Nouvelle demande
+          </button>
+        )}
       </div>
+
+      {showForm && <NewLeaveForm onDone={() => setShowForm(false)} />}
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>
