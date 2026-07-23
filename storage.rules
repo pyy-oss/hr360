@@ -27,6 +27,16 @@ service firebase.storage {
       allow read, write: if hasAny(['super_admin', 'drh', 'rh']) && sameOrg(orgId);
     }
 
+    // Coffre-fort documentaire du collaborateur : documents/{orgId}/{employeeId}/{fileName}.
+    // Lecture : RH/DRH OU le collaborateur pour SES documents. Dépôt : RH/DRH uniquement
+    // (documents officiels), borné en taille et en type.
+    match /documents/{orgId}/{employeeId}/{fileName} {
+      allow read:  if sameOrg(orgId) && (hasAny(['super_admin', 'drh', 'rh']) || empId() == employeeId);
+      allow write: if sameOrg(orgId) && hasAny(['super_admin', 'drh', 'rh'])
+                   && request.resource.size < 15 * 1024 * 1024
+                   && request.resource.contentType.matches('application/pdf|image/(png|jpeg|jpg|webp)');
+    }
+
     // Par défaut : tout est refusé.
     match /{allPaths=**} { allow read, write: if false; }
   }

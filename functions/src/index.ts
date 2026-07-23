@@ -43,6 +43,14 @@ export { startOffboarding } from './offboarding/startOffboarding';
 export { updateOffboardingTask } from './offboarding/updateOffboardingTask';
 export { closeOffboarding } from './offboarding/closeOffboarding';
 
+// Entretiens (planification recrutement)
+export { scheduleInterview } from './recrutement/scheduleInterview';
+export { updateInterview } from './recrutement/updateInterview';
+
+// Coffre-fort documentaire du collaborateur
+export { registerEmployeeDocument } from './documents/registerEmployeeDocument';
+export { deleteEmployeeDocument } from './documents/deleteEmployeeDocument';
+
 // Métriques (instantanés datés pour les tendances)
 export { captureMetricsSnapshot } from './metrics/captureMetricsSnapshot';
 

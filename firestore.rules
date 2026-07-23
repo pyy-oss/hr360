@@ -316,6 +316,28 @@ service cloud.firestore {
       allow write: if serverOnly();
     }
 
+    // ---------- recrutement : entretiens ----------
+    match /interviews/{id} {
+      // Recrutement (RH/DRH/recruteur) et manager du département du candidat.
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','recruteur']) ||
+                    isDeptManager(resource.data.departmentId)
+                  );
+      // Écriture serveur uniquement (scheduleInterview / updateInterview) : audité.
+      allow write: if serverOnly();
+    }
+
+    // ---------- coffre-fort documentaire (métadonnées ; fichiers dans Storage) ----------
+    match /employeeDocuments/{id} {
+      // RH/DRH, OU le collaborateur pour SES propres documents.
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isSelfEmp(resource.data.employeeId)
+                  );
+      // Écriture serveur uniquement (registerEmployeeDocument / deleteEmployeeDocument).
+      allow write: if serverOnly();
+    }
+
     // ---------- métriques : instantanés datés (tendances RH) ----------
     match /metricSnapshots/{id} {
       // Lecture pilotage/direction (agrégats, aucune donnée nominative). Écriture serveur.
