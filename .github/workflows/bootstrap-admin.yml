@@ -1,0 +1,46 @@
+name: Bootstrap admin (manuel)
+
+# Pose des custom claims sur un compte Firebase Auth, à la demande (bouton « Run workflow »).
+# Sert surtout à amorcer le tout premier super_admin (ensuite, tout passe par setUserRole).
+#
+# ⚠️ Ce workflow peut accorder super_admin : réservez l'accès en écriture au dépôt à des
+# personnes de confiance. Vous pouvez le supprimer une fois l'amorçage terminé.
+
+on:
+  workflow_dispatch:
+    inputs:
+      uid:
+        description: "UID Firebase Auth du compte à promouvoir"
+        required: true
+      role:
+        description: "Rôle à poser"
+        required: true
+        default: super_admin
+        type: choice
+        options: [super_admin, drh, rh, manager, collaborateur, lecture]
+      org_id:
+        description: "orgId (custom claim)"
+        required: false
+        default: neurones
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - name: Install (functions)
+        run: cd functions && npm ci
+      - name: Poser le claim
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          cd functions
+          node scripts/bootstrap-admin.mjs "$TARGET_UID" "$ORG_ID" "$TARGET_ROLE"
+          rm -f "$RUNNER_TEMP/sa.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          TARGET_UID: ${{ inputs.uid }}
+          TARGET_ROLE: ${{ inputs.role }}
+          ORG_ID: ${{ inputs.org_id }}

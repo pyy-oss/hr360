@@ -30,3 +30,11 @@ GOOGLE_APPLICATION_CREDENTIALS=/chemin/HORS-DEPOT/serviceAccount.json \
 
 L'UID se passe en argument (jamais commité). La clé de compte de service reste
 hors dépôt.
+
+## Sans rien installer : via GitHub Actions
+
+Le workflow manuel `.github/workflows/bootstrap-admin.yml` fait la même chose côté CI,
+en réutilisant le secret `FIREBASE_SERVICE_ACCOUNT`. Onglet **Actions** →
+*Bootstrap admin (manuel)* → **Run workflow** → saisir l'UID (et éventuellement le rôle /
+l'orgId). Réservez l'accès en écriture au dépôt à des personnes de confiance ; le workflow
+peut être supprimé une fois l'amorçage terminé.
