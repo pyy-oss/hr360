@@ -11,6 +11,7 @@ const generateFn = httpsCallable(functions, 'generateContent');
 const predictFn = httpsCallable(functions, 'predictAttrition');
 const askKnowledgeFn = httpsCallable(functions, 'askKnowledge');
 const upsertKnowledgeFn = httpsCallable(functions, 'upsertKnowledgeDoc');
+const analyzeSkillsFn = httpsCallable(functions, 'analyzeSkills');
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string; }
 
@@ -67,6 +68,26 @@ export function usePredictAttrition() {
     mutationFn: async () => {
       const res = await predictFn({});
       return res.data as { ok: boolean; result: PredictionResult; aggregates: PredictionAggregates };
+    },
+  });
+}
+
+export interface SkillsResult {
+  summary: string;
+  gaps: { skill: string; tension: 'forte' | 'moyenne' | 'couverte'; note: string }[];
+  recommendations: { skill: string; approach: 'former' | 'recruter' | 'mixte'; note: string }[];
+}
+export interface SkillsAggregates {
+  demandedSkills: Record<string, number>; openPositions: number;
+  trainingNeeds: { skill: string; priority: string; department: string }[]; catalogCoverage: string[];
+}
+
+/** Analyse de l'écart de compétences (DRH/RH). */
+export function useAnalyzeSkills() {
+  return useMutation({
+    mutationFn: async () => {
+      const res = await analyzeSkillsFn({});
+      return res.data as { ok: boolean; result: SkillsResult; aggregates: SkillsAggregates };
     },
   });
 }

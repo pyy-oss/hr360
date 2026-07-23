@@ -4,11 +4,13 @@ import { aiAssistant } from '../src/ai/aiAssistant';
 import { scoreCandidate } from '../src/ai/scoreCandidate';
 import { generateContent } from '../src/ai/generateContent';
 import { predictAttrition } from '../src/ai/predictAttrition';
+import { analyzeSkills } from '../src/ai/analyzeSkills';
 
 const assistant = fft.wrap(aiAssistant);
 const score = fft.wrap(scoreCandidate);
 const generate = fft.wrap(generateContent);
 const predict = fft.wrap(predictAttrition);
+const skills = fft.wrap(analyzeSkills);
 
 const rh = { role: 'rh' };
 const collab = { role: 'collaborateur', departmentId: 'cyber', employeeId: 'e_ak' };
@@ -68,5 +70,14 @@ describe('predictAttrition — gardes', () => {
   });
   it('refuse un collaborateur', async () => {
     await expect(predict(reqOf({}, collab, 'u_ak'))).rejects.toThrow();
+  });
+});
+
+describe('analyzeSkills — gardes', () => {
+  it('refuse un appel non authentifié', async () => {
+    await expect(skills({ data: {}, auth: undefined } as any)).rejects.toThrow();
+  });
+  it('refuse un collaborateur (réservé RH/DRH)', async () => {
+    await expect(skills(reqOf({}, collab, 'u_ak'))).rejects.toThrow();
   });
 });
