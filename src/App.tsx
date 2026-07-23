@@ -12,6 +12,13 @@ import { SupportsPage } from '@/modules/recrutement/SupportsPage';
 import { MobilitePage } from '@/modules/recrutement/MobilitePage';
 import { PilotagePage } from '@/modules/recrutement/PilotagePage';
 import { AssistantPage } from '@/modules/ia/AssistantPage';
+import { AnalyticsPage } from '@/modules/rh/AnalyticsPage';
+import { CollaborateursPage } from '@/modules/rh/CollaborateursPage';
+import { PerformancePage } from '@/modules/rh/PerformancePage';
+import { CompetencesPage } from '@/modules/rh/CompetencesPage';
+import { FormationPage } from '@/modules/rh/FormationPage';
+import { StaffingPage } from '@/modules/rh/StaffingPage';
+import { AbsencesPage } from '@/modules/rh/AbsencesPage';
 import { Placeholder } from '@/components/Placeholder';
 import { NAV } from '@/components/nav';
 
@@ -32,6 +39,13 @@ export function App() {
     '/mobilite': <MobilitePage />,
     '/pilotage': <PilotagePage />,
     '/assistant': <AssistantPage />,
+    '/analytics': <AnalyticsPage />,
+    '/collaborateurs': <CollaborateursPage />,
+    '/performance': <PerformancePage />,
+    '/competences': <CompetencesPage />,
+    '/formation': <FormationPage />,
+    '/staffing': <StaffingPage />,
+    '/absences': <AbsencesPage />,
   };
 
   return (
