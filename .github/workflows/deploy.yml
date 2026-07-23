@@ -28,7 +28,7 @@ jobs:
         # Authentification par COMPTE DE SERVICE (clé JSON) via Application Default
         # Credentials — méthode pérenne (le --token de firebase login:ci est déprécié).
         #   - Secret de dépôt FIREBASE_SERVICE_ACCOUNT = contenu JSON de la clé (jamais commité).
-        #   - Variable de dépôt FIREBASE_PROJECT_ID = id du projet partagé.
+        #   - FIREBASE_PROJECT_ID = id du projet, accepté comme Variable OU Secret de dépôt.
         run: |
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
@@ -39,4 +39,5 @@ jobs:
           rm -f "$RUNNER_TEMP/sa.json"
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          # Accepté indifféremment comme Variable de dépôt ou Secret de dépôt.
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
