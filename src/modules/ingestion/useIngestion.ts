@@ -6,6 +6,7 @@ import { functions, db, storage } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 
 const startFn = httpsCallable(functions, 'startIngestionJob');
+const processFn = httpsCallable(functions, 'processIngestionJob');
 
 export interface IngestionJobRow {
   id: string;
@@ -43,9 +44,12 @@ export function useBulkIngest() {
           type: input.type, employeeId: input.employeeId,
           positionId: input.positionId, category: input.category,
         });
-        const { uploadPrefix } = res.data as { jobId: string; uploadPrefix: string };
+        const { jobId, uploadPrefix } = res.data as { jobId: string; uploadPrefix: string };
         const path = `${uploadPrefix}${Date.now()}_${safeName(file.name)}`;
         await uploadBytes(ref(storage, path), file);
+        // Déclenche le traitement serveur (décompression + enregistrement). Le job
+        // passe en « processing » puis « done »/« error » ; le suivi se fait via la liste.
+        await processFn({ jobId, storagePath: path }).catch(() => undefined);
         jobs += 1;
       }
       return { jobs };

@@ -3,8 +3,10 @@ import AdmZip from 'adm-zip';
 import { fft, db, reqOf, clearFirestore, ORG } from './setup';
 import { extractAcceptedFiles } from '../src/ingestion/extract';
 import { startIngestionJob } from '../src/ingestion/startIngestionJob';
+import { processIngestionJob } from '../src/ingestion/processIngestionJob';
 
 const start = fft.wrap(startIngestionJob);
+const process = fft.wrap(processIngestionJob);
 const rh = { role: 'rh' };
 const recruteur = { role: 'recruteur' };
 const collab = { role: 'collaborateur', departmentId: 'infra', employeeId: 'e_at' };
@@ -52,5 +54,18 @@ describe('startIngestionJob', () => {
   });
   it('un collaborateur ne peut ouvrir aucun job', async () => {
     await expect(start(reqOf({ type: 'candidates' }, collab, 'u_at'))).rejects.toThrow();
+  });
+});
+
+describe('processIngestionJob — gardes', () => {
+  beforeAll(async () => { await clearFirestore(); });
+  afterAll(() => fft.cleanup());
+  beforeEach(async () => { await clearFirestore(); });
+
+  it('refuse un chemin de dépôt hors du préfixe attendu', async () => {
+    await expect(process(reqOf({ jobId: 'j1', storagePath: `ingest/AUTRE/j1/x.pdf` }, rh, 'u_rh'))).rejects.toThrow();
+  });
+  it('refuse un job inexistant', async () => {
+    await expect(process(reqOf({ jobId: 'nope', storagePath: `ingest/${ORG}/nope/x.pdf` }, rh, 'u_rh'))).rejects.toThrow();
   });
 });
