@@ -3,6 +3,15 @@ import { useAuth } from '@/auth/AuthProvider';
 import { LoginPage } from '@/auth/LoginPage';
 import { AppShell } from '@/components/AppShell';
 import { DashboardPage } from '@/modules/dashboard/DashboardPage';
+import { BoiteRhPage } from '@/modules/recrutement/BoiteRhPage';
+import { VivierPage } from '@/modules/recrutement/VivierPage';
+import { ScoringPage } from '@/modules/recrutement/ScoringPage';
+import { ProfilPage } from '@/modules/recrutement/ProfilPage';
+import { DecisionPage } from '@/modules/recrutement/DecisionPage';
+import { SupportsPage } from '@/modules/recrutement/SupportsPage';
+import { MobilitePage } from '@/modules/recrutement/MobilitePage';
+import { PilotagePage } from '@/modules/recrutement/PilotagePage';
+import { AssistantPage } from '@/modules/ia/AssistantPage';
 import { Placeholder } from '@/components/Placeholder';
 import { NAV } from '@/components/nav';
 
@@ -14,6 +23,15 @@ export function App() {
   // Écrans reproduits ; les autres routes de la maquette rendent un placeholder stylé.
   const built: Record<string, JSX.Element> = {
     '/': <DashboardPage />,
+    '/boite-rh': <BoiteRhPage />,
+    '/vivier': <VivierPage />,
+    '/scoring': <ScoringPage />,
+    '/profil': <ProfilPage />,
+    '/decision': <DecisionPage />,
+    '/supports': <SupportsPage />,
+    '/mobilite': <MobilitePage />,
+    '/pilotage': <PilotagePage />,
+    '/assistant': <AssistantPage />,
   };
 
   return (
