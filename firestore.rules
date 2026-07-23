@@ -338,6 +338,13 @@ service cloud.firestore {
       allow write: if serverOnly();
     }
 
+    // ---------- import en masse : jobs d'ingestion (suivi de statut) ----------
+    match /ingestionJobs/{id} {
+      // Lecture RH/DRH et recruteur (suivi de leurs imports). Écriture serveur uniquement.
+      allow read:  if sameOrg(resource.data) && hasAny(['super_admin','drh','rh','recruteur']);
+      allow write: if serverOnly();
+    }
+
     // ---------- métriques : instantanés datés (tendances RH) ----------
     match /metricSnapshots/{id} {
       // Lecture pilotage/direction (agrégats, aucune donnée nominative). Écriture serveur.
