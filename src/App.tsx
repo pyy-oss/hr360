@@ -9,6 +9,9 @@ import { ScoringPage } from '@/modules/recrutement/ScoringPage';
 import { ProfilPage } from '@/modules/recrutement/ProfilPage';
 import { DecisionPage } from '@/modules/recrutement/DecisionPage';
 import { SupportsPage } from '@/modules/recrutement/SupportsPage';
+import { MobilitePage } from '@/modules/recrutement/MobilitePage';
+import { PilotagePage } from '@/modules/recrutement/PilotagePage';
+import { AssistantPage } from '@/modules/ia/AssistantPage';
 import { Placeholder } from '@/components/Placeholder';
 import { NAV } from '@/components/nav';
 
@@ -26,6 +29,9 @@ export function App() {
     '/profil': <ProfilPage />,
     '/decision': <DecisionPage />,
     '/supports': <SupportsPage />,
+    '/mobilite': <MobilitePage />,
+    '/pilotage': <PilotagePage />,
+    '/assistant': <AssistantPage />,
   };
 
   return (
