@@ -1,4 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ErrBar, Field } from '@/components/mq';
+import { useAuth } from '@/auth/AuthProvider';
+import { usePositions, useCandidates } from './useRecrutement';
+import { useScoreCandidate } from '@/modules/ia/useAi';
 
 const SEG_W = [50, 25, 15, 10];
 const SEG_BG = ['var(--signal-deep)', '#2C5468', 'var(--gold)', '#7C8DA0'];
@@ -33,6 +38,72 @@ const CAPS = [
   ['#8', 'Estimation coût & délai'],
 ];
 
+const scoreClass = (s: number) => (s >= 80 ? 'sb-high' : s >= 60 ? 'sb-mid' : 'sb-low');
+
+function LiveScoring() {
+  const { role } = useAuth();
+  const positions = usePositions();
+  const candidates = useCandidates();
+  const score = useScoreCandidate();
+  const [positionId, setPositionId] = useState('');
+  const [candidateId, setCandidateId] = useState('');
+  const canScore = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  if (!canScore) return null;
+  const result = score.data;
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card-head"><h3>Analyse IA d'un candidat</h3><span className="feat">Claude · aide à la décision</span></div>
+      <div className="card-pad">
+        <div className="form-grid">
+          <Field label="Poste">
+            <select className="field" value={positionId} onChange={(e) => setPositionId(e.target.value)}>
+              <option value="">— choisir —</option>
+              {(positions.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
+          </Field>
+          <Field label="Candidat">
+            <select className="field" value={candidateId} onChange={(e) => setCandidateId(e.target.value)}>
+              <option value="">— choisir —</option>
+              {(candidates.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
+            </select>
+          </Field>
+        </div>
+        <ErrBar error={score.error} prefix="Scoring indisponible." />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+          <button className="btn btn-primary" disabled={!positionId || !candidateId || score.isPending}
+            onClick={() => score.mutate({ candidateId, positionId })}>
+            {score.isPending ? 'Analyse…' : 'Analyser l\'adéquation'}
+          </button>
+          <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>Score professionnel uniquement — identité jamais transmise (ARTCI).</span>
+        </div>
+
+        {result && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span className={`score-badge ${scoreClass(result.score)}`} style={{ fontSize: 18 }}>{result.score} %</span>
+              <span style={{ fontSize: 13 }}>{result.summary}</span>
+            </div>
+            {result.axes.map((a) => (
+              <div key={a.axis} style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><b>{a.axis}</b><span className="mono">{a.score}</span></div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{a.rationale}</div>
+              </div>
+            ))}
+            {result.mustHaveGaps.length > 0 && (
+              <div className="alert alert-info" style={{ fontSize: 12, marginTop: 8 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
+                <div>Compétences éliminatoires non couvertes : {result.mustHaveGaps.join(', ')}</div>
+              </div>
+            )}
+            <div className="note" style={{ marginTop: 10 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>Aide à la décision : la sélection reste un choix humain. Analyse journalisée (gouvernance).</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ScoringPage() {
   return (
     <>
@@ -40,6 +111,8 @@ export function ScoringPage() {
         <h1>Analyse &amp; scoring</h1>
         <p>Classement des candidats par conformité au poste. Chaque score est <b>décomposable et explicable</b> — jamais une boîte noire.</p>
       </div>
+
+      <LiveScoring />
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-pad" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
