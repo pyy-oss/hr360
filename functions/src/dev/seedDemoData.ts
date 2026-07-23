@@ -91,6 +91,19 @@ export const seedDemoData = onCall(async (req) => {
     { id: 'camp_2026__e_hb', campaignId: 'camp_2026', employeeId: 'e_hb', departmentId: 'conseil', status: 'publiee', selfAssessment: 'Mission GRC livrée avec satisfaction client.', managerAssessment: 'Posture conseil solide, COMEX client très satisfait.', rating: 5 },
   ];
 
+  const salaryBands = [
+    { id: 'junior', level: 'junior', label: 'Palier 1 — Junior', minAmount: 4800000, midAmount: 6000000, maxAmount: 7200000, currency: 'XOF' },
+    { id: 'confirme', level: 'confirme', label: 'Palier 2 — Confirmé', minAmount: 7200000, midAmount: 9000000, maxAmount: 10800000, currency: 'XOF' },
+    { id: 'senior', level: 'senior', label: 'Palier 3 — Senior', minAmount: 10800000, midAmount: 13500000, maxAmount: 16200000, currency: 'XOF' },
+    { id: 'lead', level: 'lead', label: 'Palier 4 — Lead / Manager', minAmount: 16200000, midAmount: 20000000, maxAmount: 24000000, currency: 'XOF' },
+  ];
+  const compensations = [
+    { id: 'e_sk', employeeId: 'e_sk', departmentId: 'infra', bandLevel: 'confirme', baseSalary: 9200000, currency: 'XOF', effectiveDate: '2026-01-01' },
+    { id: 'e_at', employeeId: 'e_at', departmentId: 'infra', bandLevel: 'confirme', baseSalary: 8800000, currency: 'XOF', effectiveDate: '2026-01-01' },
+    { id: 'e_hb', employeeId: 'e_hb', departmentId: 'conseil', bandLevel: 'senior', baseSalary: 13000000, currency: 'XOF', effectiveDate: '2026-01-01' },
+    { id: 'e_ak', employeeId: 'e_ak', departmentId: 'cyber', bandLevel: 'junior', baseSalary: 6300000, currency: 'XOF', effectiveDate: '2026-06-01' },
+  ];
+
   const batch = db.batch();
   for (const d of departments) batch.set(db.doc(`departments/${d.id}`), { orgId, ...d, updatedAt: now }, { merge: true });
   for (const m of missions) batch.set(db.doc(`missions/${m.id}`), { orgId, ...m, updatedAt: now }, { merge: true });
@@ -106,6 +119,8 @@ export const seedDemoData = onCall(async (req) => {
   for (const cp of campaigns) batch.set(db.doc(`objectiveCampaigns/${cp.id}`), { orgId, ...cp, createdAt: now, updatedAt: now }, { merge: true });
   for (const o of objectives) batch.set(db.doc(`objectives/${o.id}`), { orgId, ...o, createdAt: now, updatedAt: now }, { merge: true });
   for (const ev of evaluations) batch.set(db.doc(`evaluations/${ev.id}`), { orgId, ...ev, createdAt: now, updatedAt: now }, { merge: true });
+  for (const sb of salaryBands) batch.set(db.doc(`salaryBands/${sb.id}`), { orgId, ...sb, updatedAt: now }, { merge: true });
+  for (const cp of compensations) batch.set(db.doc(`compensations/${cp.id}`), { orgId, ...cp, updatedAt: now }, { merge: true });
   await batch.commit();
 
   await writeAudit({
@@ -121,5 +136,6 @@ export const seedDemoData = onCall(async (req) => {
     positions: positions.length, candidates: candidates.length,
     campaigns: campaigns.length, objectives: objectives.length,
     evaluations: evaluations.length,
+    salaryBands: salaryBands.length, compensations: compensations.length,
   };
 });

@@ -33,6 +33,10 @@ export { upsertPosition } from './recrutement/upsertPosition';
 export { upsertCandidate } from './recrutement/upsertCandidate';
 export { advanceCandidateStage } from './recrutement/advanceCandidateStage';
 
+// Rémunération (données sensibles — écriture serveur uniquement)
+export { upsertSalaryBand } from './remuneration/upsertSalaryBand';
+export { setCompensation } from './remuneration/setCompensation';
+
 // Objectifs & évaluations
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
 export { upsertObjective } from './objectifs/upsertObjective';
