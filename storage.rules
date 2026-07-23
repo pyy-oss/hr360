@@ -37,6 +37,16 @@ service firebase.storage {
                    && request.resource.contentType.matches('application/pdf|image/(png|jpeg|jpg|webp)');
     }
 
+    // Zone de transit pour l'import en masse : ingest/{orgId}/{jobId}/{fileName}.
+    // Dépôt réservé RH/DRH/recruteur (dans leur organisation) ; le fichier est traité
+    // puis supprimé par la fonction serveur (aucune lecture client). ZIP, PDF ou Word.
+    match /ingest/{orgId}/{jobId}/{fileName} {
+      allow read:  if false;
+      allow write: if sameOrg(orgId) && hasAny(['super_admin', 'drh', 'rh', 'recruteur'])
+                   && request.resource.size < 200 * 1024 * 1024
+                   && request.resource.contentType.matches('application/(zip|x-zip-compressed|pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document|octet-stream)');
+    }
+
     // Par défaut : tout est refusé.
     match /{allPaths=**} { allow read, write: if false; }
   }

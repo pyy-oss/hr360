@@ -51,6 +51,10 @@ export { updateInterview } from './recrutement/updateInterview';
 export { registerEmployeeDocument } from './documents/registerEmployeeDocument';
 export { deleteEmployeeDocument } from './documents/deleteEmployeeDocument';
 
+// Import en masse (ZIP décompressé côté serveur → coffre-fort ou Boîte RH)
+export { startIngestionJob } from './ingestion/startIngestionJob';
+export { onIngestUpload } from './ingestion/onIngestUpload';
+
 // Métriques (instantanés datés pour les tendances)
 export { captureMetricsSnapshot } from './metrics/captureMetricsSnapshot';
 

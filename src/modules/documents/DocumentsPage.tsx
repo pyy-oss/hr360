@@ -8,9 +8,18 @@ import {
   useMyDocuments, useEmployeeDocuments, useUploadDocument, useDeleteDocument,
   getUrl, type DocumentRow,
 } from './useDocuments';
+import { useBulkIngest, useRecentIngestionJobs, type IngestionJobRow } from '@/modules/ingestion/useIngestion';
 
 type Category = z.infer<typeof DocumentCategory>;
 const CATEGORIES = DocumentCategory.options;
+
+/** Libellé + couleurs (tokens maquette) associés au statut d'un job d'import. */
+const JOB_STATUS: Record<IngestionJobRow['status'], { label: string; bg: string; fg: string }> = {
+  pending: { label: 'planifié', bg: 'var(--mid-soft)', fg: 'var(--mid)' },
+  processing: { label: 'en cours', bg: 'var(--signal-soft)', fg: 'var(--signal-deep)' },
+  done: { label: 'terminé', bg: 'var(--high-soft)', fg: 'var(--high)' },
+  error: { label: 'erreur', bg: 'var(--low-soft)', fg: 'var(--low)' },
+};
 
 /** Formate le Timestamp Firestore en date lisible (fr-FR), tolérant à l'absence. */
 function fmtDate(row: DocumentRow): string {
@@ -133,6 +142,98 @@ function UploadForm({ employeeId }: { employeeId: string }) {
   );
 }
 
+/** Ligne d'un job d'import récent : statut, avancement, ignorés, erreurs. */
+function JobRow({ job }: { job: IngestionJobRow }) {
+  const st = JOB_STATUS[job.status];
+  return (
+    <div className="cand">
+      <div style={{ flex: 1 }}>
+        <div className="c-name" style={{ fontSize: 13 }}>
+          {job.processed}/{job.total} traité{job.total > 1 ? 's' : ''}
+          {job.skipped > 0 ? ` · ${job.skipped} ignoré${job.skipped > 1 ? 's' : ''}` : ''}
+        </div>
+        {job.errors.length > 0 && (
+          <div className="c-meta" style={{ color: 'var(--low)' }}>
+            {job.errors.length} erreur{job.errors.length > 1 ? 's' : ''} : {job.errors.slice(0, 2).join(' · ')}
+            {job.errors.length > 2 ? '…' : ''}
+          </div>
+        )}
+      </div>
+      <span className="chip" style={{ background: st.bg, color: st.fg, border: 'none' }}>
+        {st.label}
+      </span>
+    </div>
+  );
+}
+
+/** Import en masse réservé RH : ouvre un job serveur par fichier (ZIP décompressé côté serveur). */
+function BulkImportForm({ employeeId }: { employeeId: string }) {
+  const bulk = useBulkIngest();
+  const jobs = useRecentIngestionJobs('documents');
+  const [category, setCategory] = useState<Category>('bulletin');
+  const [files, setFiles] = useState<File[]>([]);
+  const [key, setKey] = useState(0);
+
+  const submit = () => {
+    if (!employeeId || files.length === 0) return;
+    bulk.mutate(
+      { type: 'documents', employeeId, category, files },
+      { onSuccess: () => { setFiles([]); setKey((k) => k + 1); } },
+    );
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card-head"><h3>Import en masse</h3><span className="sub">ZIP · PDF · Word</span></div>
+      <div className="card-pad">
+        <ErrBar error={bulk.error} prefix="Import en masse impossible." />
+        <ErrBar error={jobs.error} prefix="Chargement des imports récents impossible." />
+
+        <div className="form-grid">
+          <Field label="Catégorie appliquée au lot">
+            <select className="field" value={category} onChange={(e) => setCategory(e.target.value as Category)}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{DOCUMENT_CATEGORY_LABEL[c] ?? c}</option>)}
+            </select>
+          </Field>
+          <Field label="Fichiers à importer" style={{ gridColumn: '1 / -1' }}>
+            <input
+              key={key}
+              className="field"
+              type="file"
+              multiple
+              accept=".zip,.pdf,.doc,.docx,application/pdf,application/zip"
+              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+            />
+          </Field>
+        </div>
+
+        <div className="note" style={{ marginTop: 8 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+          Une archive ZIP est décompressée côté serveur ; PDF et Word acceptés.
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+          <button
+            className="btn btn-primary"
+            disabled={bulk.isPending || !employeeId || files.length === 0}
+            onClick={submit}
+          >
+            {bulk.isPending ? 'Import…' : `Importer${files.length > 0 ? ` (${files.length})` : ''}`}
+          </button>
+          {files.length === 0 && <span className="c-meta">Sélectionnez au moins un fichier.</span>}
+        </div>
+
+        <div style={{ fontSize: 13, fontWeight: 600, margin: '14px 0 6px' }}>Imports récents</div>
+        {jobs.isLoading && <p className="c-meta" style={{ padding: '4px 0' }}>Chargement…</p>}
+        {!jobs.isLoading && (jobs.data ?? []).length === 0 && (
+          <p className="c-meta" style={{ padding: '4px 0' }}>Aucun import récent.</p>
+        )}
+        {(jobs.data ?? []).map((j) => <JobRow key={j.id} job={j} />)}
+      </div>
+    </div>
+  );
+}
+
 /** Bloc RH : sélection d'un collaborateur, dépôt, et gestion de ses documents. */
 function ManagementSection() {
   const dir = useDirectory();
@@ -174,6 +275,7 @@ function ManagementSection() {
         {selId && (
           <>
             <UploadForm employeeId={selId} />
+            <BulkImportForm employeeId={selId} />
             <div style={{ fontSize: 13, fontWeight: 600, margin: '4px 0 6px' }}>
               Documents de {sel ? `${sel.firstName} ${sel.lastName}` : 'ce collaborateur'}
             </div>

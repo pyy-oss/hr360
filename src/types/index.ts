@@ -10,6 +10,7 @@ export * from './onboarding';
 export * from './engagement';
 export * from './interviews';
 export * from './documents';
+export * from './ingestion';
 export * from './knowledge';
 
 export interface Employee {

@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ErrBar, Field } from '@/components/mq';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSeedDemo } from '@/modules/absences/useLeave';
+import { useBulkIngest, useRecentIngestionJobs, type IngestionJobRow } from '@/modules/ingestion/useIngestion';
 import {
   useCandidates, usePositions, useUpsertCandidate, useAdvanceCandidateStage,
   type CandidateRow,
@@ -24,6 +26,16 @@ function stageChip(stage: string) {
   );
 }
 
+const JOB_STATUS_LABEL: Record<IngestionJobRow['status'], string> = {
+  pending: 'En attente', processing: 'Traitement…', done: 'Terminé', error: 'Erreur',
+};
+
+function jobStatusChip(status: IngestionJobRow['status']) {
+  if (status === 'done') return <span className="chip on">{JOB_STATUS_LABEL[status]}</span>;
+  if (status === 'error') return <span className="chip" style={{ background: 'var(--low-soft)', color: 'var(--low)', border: 'none' }}>{JOB_STATUS_LABEL[status]}</span>;
+  return <span className="chip" style={{ background: 'var(--mid-soft)', color: 'var(--mid)', border: 'none' }}>{JOB_STATUS_LABEL[status]}</span>;
+}
+
 export function BoiteRhPage() {
   const { role } = useAuth();
   const candidates = useCandidates();
@@ -31,10 +43,31 @@ export function BoiteRhPage() {
   const upsert = useUpsertCandidate();
   const advance = useAdvanceCandidateStage();
   const seed = useSeedDemo();
+  const qc = useQueryClient();
+  const bulkIngest = useBulkIngest();
+  const ingestJobs = useRecentIngestionJobs('candidates');
   const [attachTo, setAttachTo] = useState<Record<string, string>>({});
+  const [importPositionId, setImportPositionId] = useState('');
+  const [importFiles, setImportFiles] = useState<File[]>([]);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const canManage = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
+  const canImport = ['super_admin', 'drh', 'rh', 'recruteur'].includes(role ?? '');
   const isSuperAdmin = role === 'super_admin';
+
+  const runImport = () => {
+    if (importFiles.length === 0) return;
+    bulkIngest.mutate(
+      { type: 'candidates', positionId: importPositionId || undefined, files: importFiles },
+      {
+        onSuccess: () => {
+          setImportFiles([]);
+          setFileInputKey((k) => k + 1);
+          qc.invalidateQueries({ queryKey: ['candidates'] });
+        },
+      },
+    );
+  };
 
   const all = candidates.data ?? [];
   const active = all.filter((c) => c.stage !== 'rejete' && c.stage !== 'embauche');
@@ -80,6 +113,8 @@ export function BoiteRhPage() {
       <ErrBar error={candidates.error} prefix="Chargement des candidatures impossible." />
       <ErrBar error={upsert.error} prefix="Rattachement impossible." />
       <ErrBar error={advance.error} prefix="Transition impossible." />
+      {canImport && <ErrBar error={bulkIngest.error} prefix="Import des CV impossible." />}
+      {canImport && <ErrBar error={ingestJobs.error} prefix="Chargement des imports récents impossible." />}
 
       <div className="grid g3" style={{ marginBottom: 16 }}>
         <div className="card kpi"><div className="k-val display">{received}</div><div className="k-lab">Candidatures en cours</div></div>
@@ -145,6 +180,92 @@ export function BoiteRhPage() {
           );
         })}
       </div>
+
+      {canImport && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-head">
+            <h3>Import de CV en masse</h3>
+            <span className="sub">Téléversez plusieurs CV d'un coup — chacun crée un candidat à qualifier</span>
+          </div>
+          <div className="card-pad">
+            <p className="note" style={{ marginTop: 0 }}>
+              Une archive ZIP est décompressée côté serveur ; chaque PDF/Word devient un candidat à qualifier (nom à compléter).
+            </p>
+            <div className="form-grid" style={{ marginBottom: 12 }}>
+              <Field label="Rattacher les candidats à un poste (facultatif)">
+                <select className="field" value={importPositionId} onChange={(e) => setImportPositionId(e.target.value)}>
+                  <option value="">— non rattaché —</option>
+                  {(positions.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </Field>
+              <Field label="Fichiers (ZIP, PDF ou Word)">
+                <input
+                  key={fileInputKey}
+                  className="field"
+                  type="file"
+                  multiple
+                  accept=".zip,.pdf,.doc,.docx,application/pdf,application/zip"
+                  onChange={(e) => setImportFiles(e.target.files ? Array.from(e.target.files) : [])}
+                />
+              </Field>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button
+                className="btn btn-primary"
+                disabled={importFiles.length === 0 || bulkIngest.isPending}
+                onClick={runImport}
+              >
+                {bulkIngest.isPending ? 'Import en cours…' : 'Importer les CV'}
+              </button>
+              {importFiles.length > 0 && (
+                <span className="sub">{importFiles.length} fichier{importFiles.length > 1 ? 's' : ''} sélectionné{importFiles.length > 1 ? 's' : ''}</span>
+              )}
+            </div>
+            <p className="note" style={{ marginBottom: 0, marginTop: 12 }}>
+              Les candidats importés sont enregistrés en brouillon « à qualifier » (nom et poste à compléter),
+              conformément à l'ARTCI : minimisation des données et révision humaine avant exploitation.
+            </p>
+          </div>
+
+          <div className="card-head" style={{ borderTop: '1px solid var(--line)' }}>
+            <h3>Imports récents</h3>
+            <span className="sub">Mis à jour automatiquement pendant le traitement</span>
+          </div>
+          {ingestJobs.isLoading && (
+            <div className="card-pad" style={{ fontSize: 13, color: 'var(--muted)' }}>Chargement…</div>
+          )}
+          {!ingestJobs.isLoading && (ingestJobs.data ?? []).length === 0 && (
+            <div className="card-pad" style={{ fontSize: 13, color: 'var(--muted)' }}>Aucun import pour le moment.</div>
+          )}
+          {(ingestJobs.data ?? []).map((job) => {
+            const pos = job.positionId ? (positions.data ?? []).find((p) => p.id === job.positionId) : undefined;
+            return (
+              <div key={job.id} className="cand">
+                <div className="c-mid" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {jobStatusChip(job.status)}
+                  <span className="c-name">{job.processed}/{job.total} traité{job.total > 1 ? 's' : ''}</span>
+                  {job.skipped > 0 && <span className="sub">· {job.skipped} ignoré{job.skipped > 1 ? 's' : ''}</span>}
+                  <span className="sub">· {pos ? pos.title : 'Non rattaché'}</span>
+                </div>
+                {job.errors.length > 0 && (
+                  <span className="chip" style={{ background: 'var(--low-soft)', color: 'var(--low)', border: 'none' }}>
+                    {job.errors.length} erreur{job.errors.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+          {(ingestJobs.data ?? []).some((j) => j.errors.length > 0) && (
+            <div className="card-pad" style={{ paddingTop: 0 }}>
+              {(ingestJobs.data ?? []).filter((j) => j.errors.length > 0).map((j) => (
+                <p key={j.id} className="note" style={{ margin: '4px 0', color: 'var(--low)' }}>
+                  {j.errors.join(' · ')}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }
