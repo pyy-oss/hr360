@@ -137,6 +137,11 @@ export const seedDemoData = onCall(async (req) => {
     },
   ];
 
+  const interviews = [
+    { id: 'itw_od', candidateId: 'c_od', positionId: 'p_cyber_conf', departmentId: 'cyber', scheduledAt: '2026-07-28T10:00', mode: 'visio', interviewers: ['Manager Cyber', 'RH'], notes: 'Entretien technique.', status: 'planifie' },
+    { id: 'itw_sg', candidateId: 'c_sg', positionId: 'p_cyber_conf', departmentId: 'cyber', scheduledAt: '2026-07-30T14:30', mode: 'present', interviewers: ['DRH'], notes: '', status: 'planifie' },
+  ];
+
   // Historique d'instantanés (tendances) — 6 points mensuels de démonstration.
   const metricSnapshots = [
     { id: 'snap_1', day: '2026-02-01', headcount: 18, essai: 3, confirme: 15, sortant: 0, openPositions: 4, departuresInProgress: 0, pendingLeave: 2, activeCandidates: 21 },
@@ -190,6 +195,7 @@ export const seedDemoData = onCall(async (req) => {
   for (const ob of offboardings) batch.set(db.doc(`offboardings/${ob.id}`), { orgId, ...ob, createdAt: now, updatedAt: now }, { merge: true });
   for (const on of onboardings) batch.set(db.doc(`onboardings/${on.id}`), { orgId, ...on, createdAt: now, updatedAt: now }, { merge: true });
   for (const sn of metricSnapshots) batch.set(db.doc(`metricSnapshots/${orgId}_${sn.day}`), { orgId, ...sn, capturedAt: now }, { merge: true });
+  for (const it of interviews) batch.set(db.doc(`interviews/${it.id}`), { orgId, ...it, createdAt: now, updatedAt: now }, { merge: true });
   for (const sv of engagementSurveys) batch.set(db.doc(`engagementSurveys/${sv.id}`), { orgId, ...sv, createdAt: now, updatedAt: now }, { merge: true });
   for (const er of engagementResponses) batch.set(db.doc(`engagementResponses/${er.id}`), { orgId, ...er, submittedAt: now }, { merge: true });
   for (const kd of knowledgeDocs) batch.set(db.doc(`knowledgeDocs/${kd.id}`), { orgId, ...kd, createdAt: now, updatedAt: now }, { merge: true });
@@ -210,7 +216,7 @@ export const seedDemoData = onCall(async (req) => {
     evaluations: evaluations.length,
     salaryBands: salaryBands.length, compensations: compensations.length,
     offboardings: offboardings.length, onboardings: onboardings.length,
-    metricSnapshots: metricSnapshots.length,
+    metricSnapshots: metricSnapshots.length, interviews: interviews.length,
     engagementSurveys: engagementSurveys.length, engagementResponses: engagementResponses.length,
     knowledgeDocs: knowledgeDocs.length,
   };

@@ -8,6 +8,8 @@ export * from './remuneration';
 export * from './offboarding';
 export * from './onboarding';
 export * from './engagement';
+export * from './interviews';
+export * from './documents';
 export * from './knowledge';
 
 export interface Employee {

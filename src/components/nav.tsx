@@ -36,6 +36,7 @@ export const NAV: NavSection[] = [
       { to: '/supports', label: "Supports d'entretien", roles: RECRUT, icon: ic(<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M9 13h6M9 17h4" /></>) },
       { to: '/pilotage', label: 'Pilotage prédictif', roles: RECRUT, icon: ic(<path d="M22 12h-4l-3 9L9 3l-3 9H2" />) },
       { to: '/mobilite', label: 'Mobilité interne', roles: ['super_admin', 'drh', 'rh', 'recruteur', 'manager', 'dirigeant'], icon: ic(<><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" /></>) },
+      { to: '/entretiens', label: 'Entretiens', roles: RECRUT, icon: ic(<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4" /></>) },
     ],
   },
   {
@@ -63,6 +64,7 @@ export const NAV: NavSection[] = [
       { to: '/remuneration', label: 'Rémunération', roles: ['super_admin', 'drh', 'rh', 'manager', 'collaborateur'], icon: ic(<><circle cx="12" cy="12" r="9" /><path d="M14.5 9a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5 1-2.5 2s1 1.5 2.5 2 2.5 1 2.5 2-1 2-2.5 2A2.5 2.5 0 0 1 9.5 15M12 6v1.5M12 16.5V18" /></>) },
       { to: '/engagement', label: 'Engagement & climat', roles: RH, icon: ic(<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />) },
       { to: '/offboarding', label: 'Offboarding', roles: ['super_admin', 'drh', 'rh', 'manager'], icon: ic(<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />) },
+      { to: '/documents', label: 'Coffre-fort documentaire', icon: ic(<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12h6M9 16h4M9 8h6" /></>) },
     ],
   },
   {

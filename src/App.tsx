@@ -34,6 +34,8 @@ import { SkillsAiPage } from '@/modules/ia/SkillsAiPage';
 import { StudioPage } from '@/modules/ia/StudioPage';
 import { KnowledgePage } from '@/modules/ia/KnowledgePage';
 import { GouvernanceIaPage } from '@/modules/ia/GouvernanceIaPage';
+import { InterviewsPage } from '@/modules/recrutement/InterviewsPage';
+import { DocumentsPage } from '@/modules/documents/DocumentsPage';
 import { Placeholder } from '@/components/Placeholder';
 import { NAV } from '@/components/nav';
 
@@ -76,6 +78,8 @@ export function App() {
     '/studio': <StudioPage />,
     '/knowledge': <KnowledgePage />,
     '/gouvernance-ia': <GouvernanceIaPage />,
+    '/entretiens': <InterviewsPage />,
+    '/documents': <DocumentsPage />,
   };
 
   return (
