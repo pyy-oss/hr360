@@ -3,6 +3,7 @@ export * from './formation';
 export * from './objectifs';
 export * from './collaborateurs';
 export * from './staffing';
+export * from './recrutement';
 
 export interface Employee {
   id: string; orgId: string; uid: string;

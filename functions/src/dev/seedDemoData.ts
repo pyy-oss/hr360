@@ -66,6 +66,17 @@ export const seedDemoData = onCall(async (req) => {
     { id: 'tn_siem', departmentId: 'infra', skill: 'Supervision SIEM', priority: 'moyenne', source: 'manager', status: 'planifie' },
   ];
 
+  const positions = [
+    { id: 'p_cyber_conf', title: 'Consultant Cybersécurité — Confirmé', departmentId: 'cyber', level: 'confirme', contractType: 'cdi', openings: 2, status: 'ouvert', mustSkills: ["Tests d'intrusion & audit", 'Normes ISO 27001 / EBIOS RM', 'Sécurité réseau & pare-feu'], niceSkills: ['Supervision SIEM', 'Certif. OSCP / CEH / CISSP'], excludedCriteria: ['age', 'genre', 'origine', 'photo'], weights: { technique: 50, experience: 25, soft: 15, formation: 10 } },
+    { id: 'p_soc_junior', title: 'Analyste SOC — Junior', departmentId: 'infra', level: 'junior', contractType: 'cdi', openings: 1, status: 'ouvert', mustSkills: ['Supervision SIEM', 'Analyse de logs'], niceSkills: ['Scripting Python'], excludedCriteria: ['age', 'genre'], weights: { technique: 55, experience: 15, soft: 20, formation: 10 } },
+  ];
+  const candidates = [
+    { id: 'c_sg', firstName: 'Salif', lastName: 'Guéï', email: 's.guei@example.ci', source: 'site', positionId: 'p_cyber_conf', departmentId: 'cyber', yearsExperience: 5, stage: 'preselection', matchScore: 84, tags: ['OSCP', 'EBIOS RM'] },
+    { id: 'c_nb', firstName: 'Nadège', lastName: 'Brou', email: 'n.brou@example.ci', source: 'spontanee', positionId: 'p_cyber_conf', departmentId: 'cyber', yearsExperience: 4, stage: 'vivier', matchScore: 79, tags: ['ISO 27001'] },
+    { id: 'c_od', firstName: 'Omar', lastName: 'Doumbia', email: 'o.doumbia@example.ci', source: 'cabinet', positionId: 'p_cyber_conf', departmentId: 'cyber', yearsExperience: 6, stage: 'entretien', matchScore: 76, tags: ['Audit'] },
+    { id: 'c_mk', firstName: 'Mariam', lastName: 'Koffi', email: 'm.koffi@example.ci', source: 'cooptation', positionId: 'p_soc_junior', departmentId: 'infra', yearsExperience: 2, stage: 'nouveau', matchScore: 71, tags: ['SIEM'] },
+  ];
+
   const batch = db.batch();
   for (const d of departments) batch.set(db.doc(`departments/${d.id}`), { orgId, ...d, updatedAt: now }, { merge: true });
   for (const m of missions) batch.set(db.doc(`missions/${m.id}`), { orgId, ...m, updatedAt: now }, { merge: true });
@@ -76,6 +87,8 @@ export const seedDemoData = onCall(async (req) => {
   for (const e of employees) batch.set(db.doc(`employees/${e.id}`), { orgId, uid: null, ...e, updatedAt: now }, { merge: true });
   for (const b of balances) batch.set(db.doc(`leaveBalances/${b.id}`), { orgId, employeeId: b.id, ...b, updatedAt: now }, { merge: true });
   for (const r of leaveRequests) batch.set(db.doc(`leaveRequests/${r.id}`), { orgId, ...r, currentApproverUid: null, decisions: [], createdAt: now, updatedAt: now }, { merge: true });
+  for (const p of positions) batch.set(db.doc(`positions/${p.id}`), { orgId, ...p, createdAt: now, updatedAt: now }, { merge: true });
+  for (const cd of candidates) batch.set(db.doc(`candidates/${cd.id}`), { orgId, ...cd, appliedAt: now, createdAt: now, updatedAt: now }, { merge: true });
   await batch.commit();
 
   await writeAudit({
@@ -88,5 +101,6 @@ export const seedDemoData = onCall(async (req) => {
     ok: true, departments: departments.length, employees: employees.length,
     balances: balances.length, leaveRequests: leaveRequests.length,
     missions: missions.length, assignments: assignments.length,
+    positions: positions.length, candidates: candidates.length,
   };
 });

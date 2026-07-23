@@ -28,6 +28,11 @@ export { closeTrainingNeed } from './formation/closeTrainingNeed';
 export { upsertMission } from './staffing/upsertMission';
 export { upsertAssignment } from './staffing/upsertAssignment';
 
+// Recrutement (postes & candidats — sans IA)
+export { upsertPosition } from './recrutement/upsertPosition';
+export { upsertCandidate } from './recrutement/upsertCandidate';
+export { advanceCandidateStage } from './recrutement/advanceCandidateStage';
+
 // Objectifs & évaluations
 export { advanceCampaignPhase } from './objectifs/advanceCampaignPhase';
 export { publishEvaluation } from './objectifs/publishEvaluation';

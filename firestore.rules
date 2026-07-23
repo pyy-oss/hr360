@@ -217,6 +217,33 @@ service cloud.firestore {
       allow delete: if hasAny(['super_admin','drh','rh']);
     }
 
+    // ---------- recrutement : postes ----------
+    match /positions/{id} {
+      // Les ouvertures de poste sont visibles en interne (mobilité, référentiel).
+      allow read: if sameOrg(resource.data);
+      allow create, update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId)
+                  );
+      allow delete: if hasAny(['super_admin','drh']);
+    }
+
+    // ---------- recrutement : candidats (données personnelles — minimisation ARTCI) ----------
+    match /candidates/{id} {
+      // Accès restreint aux recruteurs (RH/DRH) et au manager du département cible.
+      // 'lecture' est volontairement EXCLU : donnée candidat sensible, pas de lecture large.
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(resource.data.departmentId)
+                  );
+      allow create, update: if sameOrg(request.resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isDeptManager(request.resource.data.departmentId)
+                  );
+      allow delete: if hasAny(['super_admin','drh']);
+      // NB : transitions de statut auditées via advanceCandidateStage (serveur).
+    }
+
     // Par défaut : tout est refusé.
     match /{document=**} { allow read, write: if false; }
   }
