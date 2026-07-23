@@ -34,6 +34,22 @@ export function useMissions() {
   });
 }
 
+/** Toutes les affectations actives de l'organisation (plan de charge global). */
+export function useAllAssignments() {
+  const { orgId } = useAuth();
+  return useQuery<AssignmentRow[]>({
+    queryKey: ['staffing', 'assignments', 'all', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const q = query(collection(db, 'assignments'), where('orgId', '==', orgId), limit(200));
+      const snap = await getDocs(q);
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<AssignmentRow, 'id'>) }))
+        .filter((a) => ['prevue', 'active'].includes(a.status));
+    },
+  });
+}
+
 /** Affectations d'un collaborateur (plan de charge individuel). */
 export function useEmployeeAssignments(employeeId?: string) {
   return useQuery<AssignmentRow[]>({
