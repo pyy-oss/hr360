@@ -3,6 +3,9 @@ import { useAuth } from '@/auth/AuthProvider';
 import { LoginPage } from '@/auth/LoginPage';
 import { AppShell } from '@/components/AppShell';
 import { DashboardPage } from '@/modules/dashboard/DashboardPage';
+import { BoiteRhPage } from '@/modules/recrutement/BoiteRhPage';
+import { VivierPage } from '@/modules/recrutement/VivierPage';
+import { ScoringPage } from '@/modules/recrutement/ScoringPage';
 import { Placeholder } from '@/components/Placeholder';
 import { NAV } from '@/components/nav';
 
@@ -14,6 +17,9 @@ export function App() {
   // Écrans reproduits ; les autres routes de la maquette rendent un placeholder stylé.
   const built: Record<string, JSX.Element> = {
     '/': <DashboardPage />,
+    '/boite-rh': <BoiteRhPage />,
+    '/vivier': <VivierPage />,
+    '/scoring': <ScoringPage />,
   };
 
   return (
