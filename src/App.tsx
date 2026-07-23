@@ -19,6 +19,11 @@ import { CompetencesPage } from '@/modules/rh/CompetencesPage';
 import { FormationPage } from '@/modules/rh/FormationPage';
 import { StaffingPage } from '@/modules/rh/StaffingPage';
 import { AbsencesPage } from '@/modules/rh/AbsencesPage';
+import { ContratPage } from '@/modules/integration/ContratPage';
+import { OnboardingPage } from '@/modules/integration/OnboardingPage';
+import { EssaiPage } from '@/modules/integration/EssaiPage';
+import { EquitePage } from '@/modules/conformite/EquitePage';
+import { PostesPage } from '@/modules/conformite/PostesPage';
 import { Placeholder } from '@/components/Placeholder';
 import { NAV } from '@/components/nav';
 
@@ -46,6 +51,11 @@ export function App() {
     '/formation': <FormationPage />,
     '/staffing': <StaffingPage />,
     '/absences': <AbsencesPage />,
+    '/contrat': <ContratPage />,
+    '/onboarding': <OnboardingPage />,
+    '/essai': <EssaiPage />,
+    '/equite': <EquitePage />,
+    '/postes': <PostesPage />,
   };
 
   return (
