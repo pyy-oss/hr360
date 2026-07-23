@@ -5,6 +5,8 @@ import { functions, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 
 const assistantFn = httpsCallable(functions, 'aiAssistant');
+const scoreFn = httpsCallable(functions, 'scoreCandidate');
+const generateFn = httpsCallable(functions, 'generateContent');
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string; }
 
@@ -14,6 +16,31 @@ export function useAssistant() {
     mutationFn: async (input: { message: string; history?: ChatTurn[] }) => {
       const res = await assistantFn(input);
       return res.data as { ok: boolean; text: string };
+    },
+  });
+}
+
+export interface ScoreAxis { axis: string; score: number; rationale: string; }
+export interface ScoreResult { score: number; summary: string; axes: ScoreAxis[]; mustHaveGaps: string[]; }
+
+/** Score d'adéquation candidat↔poste (aide à la décision). */
+export function useScoreCandidate() {
+  return useMutation({
+    mutationFn: async (input: { candidateId: string; positionId: string }) => {
+      const res = await scoreFn(input);
+      return (res.data as { ok: boolean; result: ScoreResult }).result;
+    },
+  });
+}
+
+export type GenerationKind = 'offre' | 'fiche_poste' | 'compte_rendu' | 'reponse_candidat' | 'communication' | 'lettre_embauche';
+
+/** Génération de contenu RH (Studio). */
+export function useGenerateContent() {
+  return useMutation({
+    mutationFn: async (input: { kind: GenerationKind; positionId?: string; brief?: string; tone?: 'neutre' | 'chaleureux' | 'formel' }) => {
+      const res = await generateFn(input);
+      return (res.data as { ok: boolean; text: string }).text;
     },
   });
 }

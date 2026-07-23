@@ -50,6 +50,8 @@ export { getEngagementResults } from './engagement/getEngagementResults';
 
 // Couche IA (appels Claude côté serveur — clé en secret, chaque appel audité)
 export { aiAssistant } from './ai/aiAssistant';
+export { scoreCandidate } from './ai/scoreCandidate';
+export { generateContent } from './ai/generateContent';
 
 // Objectifs & évaluations
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
