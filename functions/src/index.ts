@@ -34,6 +34,8 @@ export { upsertCandidate } from './recrutement/upsertCandidate';
 export { advanceCandidateStage } from './recrutement/advanceCandidateStage';
 
 // Objectifs & évaluations
+export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
+export { upsertObjective } from './objectifs/upsertObjective';
 export { advanceCampaignPhase } from './objectifs/advanceCampaignPhase';
 export { publishEvaluation } from './objectifs/publishEvaluation';
 export { validateObjective } from './objectifs/validateObjective';
