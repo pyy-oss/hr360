@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
@@ -12,6 +13,22 @@ const app = initializeApp({
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 });
+
+// App Check (défense en profondeur contre l'abus d'API). Activé dès qu'une clé de
+// site reCAPTCHA v3 est fournie (clé PUBLIQUE, ok à embarquer). En dev/emulateur,
+// poser VITE_APPCHECK_DEBUG_TOKEN=true active le jeton de debug. Sans clé, on
+// n'initialise rien : l'app fonctionne, l'autorité reste les règles + fonctions.
+const APPCHECK_KEY = import.meta.env.VITE_APPCHECK_SITE_KEY;
+if (APPCHECK_KEY) {
+  if (import.meta.env.VITE_APPCHECK_DEBUG_TOKEN) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
+  }
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(APPCHECK_KEY),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 // Projet Firebase PARTAGÉ : hr360 est isolé des autres applications par des ressources
 // dédiées — une base Firestore NOMMÉE (jamais la base '(default)'), un bucket Storage

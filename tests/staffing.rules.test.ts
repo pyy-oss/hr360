@@ -21,11 +21,12 @@ describe('missions — portée département', () => {
   it('un membre de l’organisation lit une mission', async () => {
     await assertSucceeds(getDoc(doc(collab(), 'missions/m1')));
   });
-  it('le manager cyber crée une mission de son département', async () => {
-    await assertSucceeds(setDoc(doc(mgrCyber(), 'missions/m2'), { orgId: ORG, departmentId: 'cyber', name: 'X', client: 'Y' }));
+  // Écriture serveur uniquement (upsertMission) : aucune écriture client, même RH/manager.
+  it('le manager du département ne crée pas de mission en direct (serveur only)', async () => {
+    await assertFails(setDoc(doc(mgrCyber(), 'missions/m2'), { orgId: ORG, departmentId: 'cyber', name: 'X', client: 'Y' }));
   });
-  it('le manager réseau ne crée pas une mission « cyber »', async () => {
-    await assertFails(setDoc(doc(mgrRes(), 'missions/m3'), { orgId: ORG, departmentId: 'cyber', name: 'X', client: 'Y' }));
+  it('la DRH ne crée pas de mission en direct (serveur only)', async () => {
+    await assertFails(setDoc(doc(drh(), 'missions/m3'), { orgId: ORG, departmentId: 'cyber', name: 'X', client: 'Y' }));
   });
 });
 
