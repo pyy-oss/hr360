@@ -54,6 +54,7 @@ export { scoreCandidate } from './ai/scoreCandidate';
 export { generateContent } from './ai/generateContent';
 export { predictAttrition } from './ai/predictAttrition';
 export { askKnowledge } from './ai/askKnowledge';
+export { analyzeSkills } from './ai/analyzeSkills';
 
 // Base de connaissances RH (sources du RAG)
 export { upsertKnowledgeDoc } from './knowledge/upsertKnowledgeDoc';
