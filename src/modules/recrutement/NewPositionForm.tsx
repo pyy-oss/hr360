@@ -1,18 +1,24 @@
 import { useState } from 'react';
 import { PositionInput } from '@/types';
 import { Field } from '@/components/mq';
-import { useUpsertPosition } from './useRecrutement';
+import { useUpsertPosition, type PositionRow } from './useRecrutement';
 import { useDepartments } from '@/modules/collaborateurs/useCollaborateurs';
 
 const csv = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean);
 
-export function NewPositionForm({ onDone }: { onDone: () => void }) {
+/** Formulaire de création OU d'édition d'un poste (si `initial` est fourni). */
+export function NewPositionForm({ onDone, initial }: { onDone: () => void; initial?: PositionRow }) {
   const upsert = useUpsertPosition();
   const depts = useDepartments();
+  const w = initial?.weights;
   const [f, setF] = useState({
-    title: '', departmentId: '', level: 'confirme', contractType: 'cdi', openings: '1',
-    status: 'ouvert', mustSkills: '', niceSkills: '', excludedCriteria: 'age, genre, origine, photo',
-    wTech: '50', wExp: '25', wSoft: '15', wForm: '10',
+    title: initial?.title ?? '', departmentId: initial?.departmentId ?? '',
+    level: initial?.level ?? 'confirme', contractType: initial?.contractType ?? 'cdi',
+    openings: String(initial?.openings ?? 1), status: initial?.status ?? 'ouvert',
+    mustSkills: (initial?.mustSkills ?? []).join(', '), niceSkills: (initial?.niceSkills ?? []).join(', '),
+    excludedCriteria: (initial?.excludedCriteria ?? ['age', 'genre', 'origine', 'photo']).join(', '),
+    wTech: String(w?.technique ?? 50), wExp: String(w?.experience ?? 25),
+    wSoft: String(w?.soft ?? 15), wForm: String(w?.formation ?? 10),
   });
   const [err, setErr] = useState<string | null>(null);
   const set = (k: string, v: string) => setF((s) => ({ ...s, [k]: v }));
@@ -20,6 +26,7 @@ export function NewPositionForm({ onDone }: { onDone: () => void }) {
   const submit = () => {
     setErr(null);
     const parsed = PositionInput.safeParse({
+      id: initial?.id,
       title: f.title, departmentId: f.departmentId, level: f.level, contractType: f.contractType,
       openings: Number(f.openings) || 1, status: f.status,
       mustSkills: csv(f.mustSkills), niceSkills: csv(f.niceSkills), excludedCriteria: csv(f.excludedCriteria),
@@ -34,7 +41,7 @@ export function NewPositionForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
-      <div className="card-head"><h3>Nouveau poste</h3></div>
+      <div className="card-head"><h3>{initial ? 'Modifier le poste' : 'Nouveau poste'}</h3></div>
       <div className="card-pad">
         <div className="form-grid">
           <Field label="Intitulé" style={{ gridColumn: '1 / -1' }}><input className="field" value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="Consultant Cybersécurité — Confirmé" /></Field>
@@ -42,6 +49,15 @@ export function NewPositionForm({ onDone }: { onDone: () => void }) {
             <select className="field" value={f.departmentId} onChange={(e) => set('departmentId', e.target.value)}>
               <option value="">— choisir —</option>
               {(depts.data ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Statut">
+            <select className="field" value={f.status} onChange={(e) => set('status', e.target.value)}>
+              <option value="ouvert">Ouvert (actif)</option>
+              <option value="en_cours">En cours</option>
+              <option value="gele">Gelé</option>
+              <option value="pourvu">Pourvu</option>
+              <option value="annule">Annulé</option>
             </select>
           </Field>
           <Field label="Niveau">
@@ -68,7 +84,7 @@ export function NewPositionForm({ onDone }: { onDone: () => void }) {
         <div style={{ fontSize: 12, color: 'var(--muted-2)', marginTop: 6 }}>La somme des pondérations doit valoir 100 %.</div>
         {err && <div className="ferr" role="alert">{err}</div>}
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <button className="btn btn-primary" disabled={upsert.isPending} onClick={submit}>{upsert.isPending ? 'Enregistrement…' : 'Créer le poste'}</button>
+          <button className="btn btn-primary" disabled={upsert.isPending} onClick={submit}>{upsert.isPending ? 'Enregistrement…' : (initial ? 'Enregistrer' : 'Créer le poste')}</button>
           <button className="btn btn-ghost" onClick={onDone}>Annuler</button>
         </div>
       </div>

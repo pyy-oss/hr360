@@ -2,8 +2,19 @@ import { useState } from 'react';
 import { ErrBar } from '@/components/mq';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSeedDemo } from '@/modules/absences/useLeave';
-import { usePositions, type PositionRow } from '@/modules/recrutement/useRecrutement';
+import { usePositions, useUpsertPosition, type PositionRow } from '@/modules/recrutement/useRecrutement';
 import { NewPositionForm } from '@/modules/recrutement/NewPositionForm';
+import type { PositionInput } from '@/types';
+
+/** Reconstruit la charge utile complète d'un poste (upsert = mise à jour totale). */
+function toInput(p: PositionRow, status: string) {
+  return {
+    id: p.id, title: p.title, departmentId: p.departmentId, level: p.level,
+    contractType: p.contractType, openings: p.openings, status,
+    mustSkills: p.mustSkills ?? [], niceSkills: p.niceSkills ?? [],
+    excludedCriteria: p.excludedCriteria ?? [], weights: p.weights,
+  };
+}
 
 const LEVEL_LABEL: Record<string, string> = {
   junior: 'Junior', confirme: 'Confirmé', senior: 'Senior', lead: 'Lead', manager: 'Manager',
@@ -27,9 +38,11 @@ function Weights({ w }: { w?: PositionRow['weights'] }) {
 export function PostesPage() {
   const { role } = useAuth();
   const positions = usePositions();
+  const upsert = useUpsertPosition();
   const seed = useSeedDemo();
   const [selId, setSelId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<PositionRow | null>(null);
 
   const rows = positions.data ?? [];
   const sel = rows.find((p) => p.id === selId) ?? rows[0];
@@ -37,23 +50,28 @@ export function PostesPage() {
   const canManage = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
   const empty = !positions.isLoading && rows.length === 0;
 
+  const openCreate = () => { setEditing(null); setShowForm(true); };
+  const openEdit = (p: PositionRow) => { setEditing(p); setShowForm(true); };
+  const setStatus = (p: PositionRow, status: string) => upsert.mutate(toInput(p, status) as PositionInput);
+
   return (
     <>
       <div className="page-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1>Postes &amp; référentiel</h1>
-          <p>Le référentiel définit « en amont » ce que l'on cherche : compétences éliminatoires, pondérations, et critères explicitement exclus.</p>
+          <h1>Postes &amp; ouvertures</h1>
+          <p>Définis ici tes postes à pourvoir : statut (ouvert/gelé/pourvu), compétences éliminatoires, pondérations du score et critères exclus. Les postes « ouverts » alimentent le scoring, le vivier et le pilotage.</p>
         </div>
         {canManage && !showForm && (
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+          <button className="btn btn-primary" onClick={openCreate}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>Nouveau poste
           </button>
         )}
       </div>
 
-      {showForm && <NewPositionForm onDone={() => setShowForm(false)} />}
+      {showForm && <NewPositionForm initial={editing ?? undefined} onDone={() => { setShowForm(false); setEditing(null); }} />}
 
       <ErrBar error={positions.error} prefix="Chargement des postes impossible." />
+      <ErrBar error={upsert.error} prefix="Mise à jour du poste impossible." />
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>
@@ -83,6 +101,17 @@ export function PostesPage() {
             <div className="card">
               <div className="card-head"><h3>{sel.title}</h3><span className="sub">{LEVEL_LABEL[sel.level] ?? sel.level} · {sel.contractType.toUpperCase()}</span></div>
               <div className="card-pad">
+                {canManage && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                    <button className="btn btn-ghost" disabled={upsert.isPending} onClick={() => openEdit(sel)}>
+                      <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" /></svg>Modifier
+                    </button>
+                    {sel.status !== 'ouvert' && <button className="btn btn-primary" disabled={upsert.isPending} onClick={() => setStatus(sel, 'ouvert')}>Activer (ouvrir)</button>}
+                    {sel.status === 'ouvert' && <button className="btn btn-ghost" disabled={upsert.isPending} onClick={() => setStatus(sel, 'gele')}>Geler</button>}
+                    {sel.status !== 'pourvu' && <button className="btn btn-ghost" disabled={upsert.isPending} onClick={() => setStatus(sel, 'pourvu')}>Marquer pourvu</button>}
+                    {sel.status !== 'annule' && <button className="btn btn-ghost" disabled={upsert.isPending} onClick={() => { if (confirm(`Annuler l'ouverture « ${sel.title} » ?`)) setStatus(sel, 'annule'); }}>Annuler l'ouverture</button>}
+                  </div>
+                )}
                 <div className="section-t" style={{ marginTop: 0 }}>Pondérations globales du score</div>
                 <Weights w={sel.weights} />
                 <div className="grid g2" style={{ marginTop: 22, gap: 28 }}>
