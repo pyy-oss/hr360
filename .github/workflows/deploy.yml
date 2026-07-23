@@ -22,7 +22,21 @@ jobs:
           npm run test:rules
           npm run test:functions
       - name: Deploy
-        # FIREBASE_TOKEN est un secret GitHub — jamais commité.
-        run: npx firebase-tools deploy --only hosting,firestore,functions,storage --token "$FIREBASE_TOKEN"
+        # Projet Firebase PARTAGÉ : on ne déploie QUE les ressources hr360 (codebase de
+        # fonctions isolé + base/site/bucket dédiés déclarés dans firebase.json), afin de
+        # ne jamais écraser l'autre application du projet.
+        # Authentification par COMPTE DE SERVICE (clé JSON) via Application Default
+        # Credentials — méthode pérenne (le --token de firebase login:ci est déprécié).
+        #   - Secret de dépôt FIREBASE_SERVICE_ACCOUNT = contenu JSON de la clé (jamais commité).
+        #   - Variable de dépôt FIREBASE_PROJECT_ID = id du projet partagé.
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx firebase-tools deploy \
+            --only "hosting,firestore,functions:hr360,storage" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive
+          rm -f "$RUNNER_TEMP/sa.json"
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
