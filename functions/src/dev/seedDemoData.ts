@@ -78,12 +78,17 @@ export const seedDemoData = onCall(async (req) => {
   ];
 
   const campaigns = [
-    { id: 'camp_2026', name: 'Campagne annuelle 2026', year: 2026, phase: 'fixation' },
+    { id: 'camp_2026', name: 'Campagne annuelle 2026', year: 2026, phase: 'evaluation' },
   ];
   const objectives = [
     { id: 'obj_ak_1', campaignId: 'camp_2026', employeeId: 'e_ak', departmentId: 'cyber', title: "Réduire le délai moyen d'audit", measure: 'Délai ≤ 15 j ouvrés', weight: 40, status: 'brouillon' },
     { id: 'obj_ak_2', campaignId: 'camp_2026', employeeId: 'e_ak', departmentId: 'cyber', title: 'Obtenir la certification OSCP', measure: 'Certification validée', weight: 60, status: 'valide' },
     { id: 'obj_sk_1', campaignId: 'camp_2026', employeeId: 'e_sk', departmentId: 'infra', title: 'Industrialiser la supervision SIEM', measure: '3 playbooks livrés', weight: 100, status: 'valide' },
+  ];
+  const evaluations = [
+    { id: 'camp_2026__e_ak', campaignId: 'camp_2026', employeeId: 'e_ak', departmentId: 'cyber', status: 'en_cours', selfAssessment: 'Bonne montée en compétence, délais tenus sur 2 audits.', managerAssessment: '', rating: null },
+    { id: 'camp_2026__e_sk', campaignId: 'camp_2026', employeeId: 'e_sk', departmentId: 'infra', status: 'soumise', selfAssessment: 'Playbooks SIEM livrés.', managerAssessment: 'Excellent travail d’industrialisation, à confirmer sur la durée.', rating: 4 },
+    { id: 'camp_2026__e_hb', campaignId: 'camp_2026', employeeId: 'e_hb', departmentId: 'conseil', status: 'publiee', selfAssessment: 'Mission GRC livrée avec satisfaction client.', managerAssessment: 'Posture conseil solide, COMEX client très satisfait.', rating: 5 },
   ];
 
   const batch = db.batch();
@@ -100,6 +105,7 @@ export const seedDemoData = onCall(async (req) => {
   for (const cd of candidates) batch.set(db.doc(`candidates/${cd.id}`), { orgId, ...cd, appliedAt: now, createdAt: now, updatedAt: now }, { merge: true });
   for (const cp of campaigns) batch.set(db.doc(`objectiveCampaigns/${cp.id}`), { orgId, ...cp, createdAt: now, updatedAt: now }, { merge: true });
   for (const o of objectives) batch.set(db.doc(`objectives/${o.id}`), { orgId, ...o, createdAt: now, updatedAt: now }, { merge: true });
+  for (const ev of evaluations) batch.set(db.doc(`evaluations/${ev.id}`), { orgId, ...ev, createdAt: now, updatedAt: now }, { merge: true });
   await batch.commit();
 
   await writeAudit({
@@ -114,5 +120,6 @@ export const seedDemoData = onCall(async (req) => {
     missions: missions.length, assignments: assignments.length,
     positions: positions.length, candidates: candidates.length,
     campaigns: campaigns.length, objectives: objectives.length,
+    evaluations: evaluations.length,
   };
 });

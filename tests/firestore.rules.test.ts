@@ -156,13 +156,26 @@ describe('evaluations — visibilité conditionnée à la publication', () => {
       await setDoc(doc(db, 'evaluations/ev_pub'), {
         orgId: ORG, campaignId: 'c1', employeeId: 'e_collab', departmentId: 'cyber', status: 'publiee',
       });
+      await setDoc(doc(db, 'evaluations/ev_enc'), {
+        orgId: ORG, campaignId: 'c1', employeeId: 'e_collab', departmentId: 'cyber',
+        status: 'en_cours', selfAssessment: '', managerAssessment: '',
+      });
     });
   });
   it('le collaborateur lit son évaluation PUBLIÉE', async () => {
     await assertSucceeds(getDoc(doc(collab(), 'evaluations/ev_pub')));
   });
-  it('le collaborateur ne lit PAS son évaluation non publiée', async () => {
+  it('le collaborateur lit son évaluation EN COURS (pour auto-évaluation)', async () => {
+    await assertSucceeds(getDoc(doc(collab(), 'evaluations/ev_enc')));
+  });
+  it('le collaborateur ne lit PAS son évaluation « soumise » (avant publication)', async () => {
     await assertFails(getDoc(doc(collab(), 'evaluations/ev_draft')));
+  });
+  it('le collaborateur écrit son auto-évaluation (en_cours, status inchangé)', async () => {
+    await assertSucceeds(updateDoc(doc(collab(), 'evaluations/ev_enc'), { selfAssessment: 'Mon bilan' }));
+  });
+  it('le collaborateur ne modifie pas l’appréciation du manager', async () => {
+    await assertFails(updateDoc(doc(collab(), 'evaluations/ev_enc'), { managerAssessment: 'faux' }));
   });
   it('le collaborateur ne se publie pas lui-même (status)', async () => {
     await assertFails(updateDoc(doc(collab(), 'evaluations/ev_draft'), { status: 'publiee' }));

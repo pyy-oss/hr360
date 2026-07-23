@@ -37,5 +37,7 @@ export { advanceCandidateStage } from './recrutement/advanceCandidateStage';
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
 export { upsertObjective } from './objectifs/upsertObjective';
 export { advanceCampaignPhase } from './objectifs/advanceCampaignPhase';
+export { openCampaignEvaluations } from './objectifs/openCampaignEvaluations';
+export { submitEvaluation } from './objectifs/submitEvaluation';
 export { publishEvaluation } from './objectifs/publishEvaluation';
 export { validateObjective } from './objectifs/validateObjective';
