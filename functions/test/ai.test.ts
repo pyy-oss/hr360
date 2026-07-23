@@ -3,10 +3,12 @@ import { fft, db, reqOf, clearFirestore, ORG } from './setup';
 import { aiAssistant } from '../src/ai/aiAssistant';
 import { scoreCandidate } from '../src/ai/scoreCandidate';
 import { generateContent } from '../src/ai/generateContent';
+import { predictAttrition } from '../src/ai/predictAttrition';
 
 const assistant = fft.wrap(aiAssistant);
 const score = fft.wrap(scoreCandidate);
 const generate = fft.wrap(generateContent);
+const predict = fft.wrap(predictAttrition);
 
 const rh = { role: 'rh' };
 const collab = { role: 'collaborateur', departmentId: 'cyber', employeeId: 'e_ak' };
@@ -54,5 +56,17 @@ describe('generateContent — gardes', () => {
   });
   it('refuse un poste de référence inexistant', async () => {
     await expect(generate(reqOf({ kind: 'offre', positionId: 'nope' }, rh, 'u_rh'))).rejects.toThrow();
+  });
+});
+
+describe('predictAttrition — gardes', () => {
+  it('refuse un appel non authentifié', async () => {
+    await expect(predict({ data: {}, auth: undefined } as any)).rejects.toThrow();
+  });
+  it('refuse la RH (réservé DRH/super_admin)', async () => {
+    await expect(predict(reqOf({}, rh, 'u_rh'))).rejects.toThrow();
+  });
+  it('refuse un collaborateur', async () => {
+    await expect(predict(reqOf({}, collab, 'u_ak'))).rejects.toThrow();
   });
 });

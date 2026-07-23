@@ -219,6 +219,20 @@
       ]
     },
     {
+      "collectionGroup": "offboardings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "orgId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "engagementSurveys",
       "queryScope": "COLLECTION",
       "fields": [
