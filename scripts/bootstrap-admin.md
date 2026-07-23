@@ -16,3 +16,17 @@ console.log('super_admin posé. Rafraîchir le token côté client.');
 ```
 
 Ensuite, toute attribution de rôle passe par la fonction `setUserRole` dans l'app.
+
+## Script prêt à l'emploi
+
+Un script exécutable est fourni : `functions/scripts/bootstrap-admin.mjs`
+(placé sous `functions/` pour réutiliser `firebase-admin` déjà installé).
+
+```bash
+cd functions
+GOOGLE_APPLICATION_CREDENTIALS=/chemin/HORS-DEPOT/serviceAccount.json \
+  node scripts/bootstrap-admin.mjs <UID> [orgId]   # orgId par défaut : neurones
+```
+
+L'UID se passe en argument (jamais commité). La clé de compte de service reste
+hors dépôt.
