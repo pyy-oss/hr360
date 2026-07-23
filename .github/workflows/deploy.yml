@@ -14,7 +14,22 @@ jobs:
       - name: Install (functions)
         run: cd functions && npm ci
       - name: Type-check & build
+        # La config Firebase WEB doit être présente à la COMPILATION : Vite fige les
+        # VITE_* dans le bundle. Ces valeurs sont publiques (présentes dans tout bundle
+        # client) ; seule l'apiKey est externalisée (les scanners de secrets détectent
+        # les clés « AIzaSy… »), acceptée comme Variable OU Secret de dépôt.
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY || secrets.VITE_FIREBASE_API_KEY }}
         run: |
+          export VITE_FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
+          export VITE_FIREBASE_AUTH_DOMAIN="${FIREBASE_PROJECT_ID}.firebaseapp.com"
+          export VITE_FIREBASE_STORAGE_BUCKET="hr360.firebasestorage.app"
+          export VITE_FIREBASE_MESSAGING_SENDER_ID="38070203160"
+          export VITE_FIREBASE_APP_ID="1:38070203160:web:4e199af7ab660b67f0646d"
+          export VITE_FIREBASE_DB_ID="hr360"
+          export VITE_FIREBASE_REGION="europe-west1"
+          export VITE_USE_EMULATORS="false"
           npm run build
           cd functions && npm run build
       - name: Test (Vitest + emulator rules & functions)

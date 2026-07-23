@@ -60,10 +60,14 @@ Authentification par **compte de service** (méthode pérenne ; le `--token` de
   service du projet, au **moindre privilège** (rôles de déploiement Firebase : Hosting,
   Firestore, Cloud Functions, Storage, + « Service Account User »). C'est un secret privé :
   jamais commité, jamais côté frontend.
-- **Variable** `FIREBASE_PROJECT_ID` = l'id du projet partagé.
+- **Variable** (ou Secret) `FIREBASE_PROJECT_ID` = l'id du projet partagé.
+- **Variable** (ou Secret) `VITE_FIREBASE_API_KEY` = la clé web (publique) du projet.
+  Nécessaire à la **compilation** du front : Vite fige les `VITE_*` dans le bundle, donc
+  la config doit exister au moment du `npm run build` en CI (le `.env` local n'y est pas).
+  Les autres identifiants web (publics) sont fournis directement par le workflow.
 
-Le workflow écrit le JSON dans un fichier temporaire, pointe `GOOGLE_APPLICATION_CREDENTIALS`
-dessus le temps du déploiement, puis le supprime.
+Le workflow écrit le JSON du compte de service dans un fichier temporaire, pointe
+`GOOGLE_APPLICATION_CREDENTIALS` dessus le temps du déploiement, puis le supprime.
 
 ## Migration vers un projet DÉDIÉ (plus tard)
 
