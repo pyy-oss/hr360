@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
-import { NAV, CRUMB } from './nav';
+import { navForRole, CRUMB } from './nav';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-item active' : 'nav-item';
@@ -37,14 +37,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </NavLink>
 
-          {NAV.map((section) => (
+          {navForRole(role).map((section) => (
             <div key={section.label}>
               <div className="nav-label">{section.label}</div>
               {section.items.map((it) => (
                 <NavLink key={it.to} to={it.to} end={it.to === '/'} className={navClass}>
                   {it.icon}
                   {it.label}
-                  {it.badge && <span className="badge">{it.badge}</span>}
                 </NavLink>
               ))}
             </div>

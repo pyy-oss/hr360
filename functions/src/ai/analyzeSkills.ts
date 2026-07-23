@@ -46,7 +46,7 @@ const SCHEMA = {
  * et la couverture du catalogue interne. Aucune donnée nominative. Journalisé.
  */
 export const analyzeSkills = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (req) => {
-  const c = assertRole(req, ['super_admin', 'drh', 'rh']);
+  const c = assertRole(req, ['super_admin', 'drh', 'rh', 'dirigeant']);
   const parsed = Schema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', 'Requête invalide.');
   const orgId = c.orgId;

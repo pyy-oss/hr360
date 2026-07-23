@@ -34,7 +34,7 @@ export function PostesPage() {
   const rows = positions.data ?? [];
   const sel = rows.find((p) => p.id === selId) ?? rows[0];
   const isSuperAdmin = role === 'super_admin';
-  const canManage = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const canManage = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
   const empty = !positions.isLoading && rows.length === 0;
 
   return (

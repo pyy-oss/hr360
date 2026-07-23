@@ -23,7 +23,7 @@ export async function setupEnv(): Promise<RulesTestEnvironment> {
 export const getEnv = () => env;
 
 type Claims = {
-  role: string; orgId?: string; employeeId?: string; departmentId?: string;
+  role: string; orgId?: string; employeeId?: string; departmentId?: string; departmentIds?: string[];
 };
 
 /** Firestore authentifié avec des custom claims (rôle + rattachement). */

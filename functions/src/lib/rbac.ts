@@ -1,12 +1,21 @@
 import { HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 
-export type Role = 'super_admin' | 'drh' | 'rh' | 'manager' | 'collaborateur' | 'lecture';
+export type Role =
+  | 'super_admin' | 'drh' | 'rh' | 'recruteur'
+  | 'manager' | 'collaborateur' | 'lecture' | 'dirigeant';
 
 export interface Claims {
   role: Role;
   orgId: string;
   employeeId?: string;
   departmentId?: string;
+  // Périmètre multi-départements (portefeuille HRBP, chapeau transverse Codir).
+  departmentIds?: string[];
+}
+
+/** Le département fait-il partie du périmètre de l'acteur (mono ou multi) ? */
+export function inDeptScope(c: Claims, departmentId: string): boolean {
+  return c.departmentId === departmentId || (c.departmentIds ?? []).includes(departmentId);
 }
 
 /** Récupère les claims du token ou lève une erreur si non authentifié. */
@@ -41,7 +50,7 @@ export function assertSameOrg(claims: Claims, resourceOrgId: unknown): void {
 export function assertDeptManagerOrHR(req: CallableRequest, departmentId: string): Claims {
   const c = getClaims(req);
   const isHR = ['super_admin', 'drh', 'rh'].includes(c.role);
-  const isMgr = c.role === 'manager' && c.departmentId === departmentId;
+  const isMgr = c.role === 'manager' && inDeptScope(c, departmentId);
   if (!isHR && !isMgr) {
     throw new HttpsError('permission-denied', "Réservé au manager du département ou à la RH.");
   }

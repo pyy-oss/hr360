@@ -18,7 +18,7 @@ export function ProfilPage() {
   const [candidateId, setCandidateId] = useState('');
   const [scorePositionId, setScorePositionId] = useState('');
 
-  const canView = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const canView = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
 
   const cand = useMemo(
     () => (candidates.data ?? []).find((c) => c.id === candidateId),

@@ -14,8 +14,8 @@ const fr1 = (n: number) => n.toFixed(1).replace('.', ',');
 
 export function AnalyticsPage() {
   const { role } = useAuth();
-  const isAllowed = ['super_admin', 'drh', 'rh', 'lecture'].includes(role ?? '');
-  const canReadEngagement = ['super_admin', 'drh', 'rh'].includes(role ?? '');
+  const isAllowed = ['super_admin', 'drh', 'rh', 'lecture', 'dirigeant'].includes(role ?? '');
+  const canReadEngagement = ['super_admin', 'drh', 'rh', 'dirigeant'].includes(role ?? '');
 
   const { metrics, isLoading, error } = useOrgMetrics();
   const leave = useLeaveByStatus();

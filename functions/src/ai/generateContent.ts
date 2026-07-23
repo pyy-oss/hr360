@@ -38,8 +38,8 @@ export const generateContent = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (r
   const { kind, positionId, brief, tone } = p.data;
 
   const claims = getClaims(req);
-  if (!['super_admin', 'drh', 'rh', 'manager'].includes(claims.role)) {
-    throw new HttpsError('permission-denied', 'Réservé à la RH ou aux managers.');
+  if (!['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(claims.role)) {
+    throw new HttpsError('permission-denied', 'Réservé à la RH, au recrutement ou aux managers.');
   }
 
   let grounding = '';

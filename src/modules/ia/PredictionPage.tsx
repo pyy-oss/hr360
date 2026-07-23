@@ -8,7 +8,7 @@ const riskColor = (r: string) => (r === 'eleve' ? 'var(--low)' : r === 'modere' 
 export function PredictionPage() {
   const { role } = useAuth();
   const predict = usePredictAttrition();
-  const canRun = ['super_admin', 'drh'].includes(role ?? '');
+  const canRun = ['super_admin', 'drh', 'dirigeant'].includes(role ?? '');
   const data = predict.data;
 
   return (

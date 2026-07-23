@@ -36,6 +36,9 @@ export const upsertPosition = onCall(async (req) => {
   const { id, ...data } = p.data;
 
   const c = getClaims(req);
+  // Le recruteur gère les ouvertures de poste au niveau de l'organisation (pas de
+  // restriction départementale) ; les managers restent limités à leur périmètre.
+  const isRecruiter = c.role === 'recruteur';
   const ref = id ? db.doc(`positions/${id}`) : db.collection('positions').doc();
   if (id) {
     const existing = await ref.get();
@@ -43,10 +46,10 @@ export const upsertPosition = onCall(async (req) => {
     assertSameOrg(c, existing.get('orgId'));
     // Droits fondés sur le département EXISTANT : empêche de détourner un poste d'un
     // autre département vers le sien.
-    assertDeptManagerOrHR(req, existing.get('departmentId'));
+    if (!isRecruiter) assertDeptManagerOrHR(req, existing.get('departmentId'));
   }
   // Droits sur le département cible (création, ou déplacement autorisé).
-  assertDeptManagerOrHR(req, data.departmentId);
+  if (!isRecruiter) assertDeptManagerOrHR(req, data.departmentId);
 
   const payload: Record<string, unknown> = { orgId: c.orgId, ...data, updatedAt: FieldValue.serverTimestamp() };
   if (!id) payload.createdAt = FieldValue.serverTimestamp();

@@ -33,7 +33,7 @@ export function BoiteRhPage() {
   const seed = useSeedDemo();
   const [attachTo, setAttachTo] = useState<Record<string, string>>({});
 
-  const canManage = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const canManage = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
   const isSuperAdmin = role === 'super_admin';
 
   const all = candidates.data ?? [];

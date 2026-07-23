@@ -70,7 +70,7 @@ export function DecisionPage() {
   const { role } = useAuth();
   const candidates = useCandidates();
   const positions = usePositions();
-  const canDecide = ['super_admin', 'drh', 'rh'].includes(role ?? '');
+  const canDecide = ['super_admin', 'drh', 'rh', 'recruteur'].includes(role ?? '');
 
   const finalists = (candidates.data ?? [])
     .filter((c) => DECISION_STAGES.includes(c.stage))
