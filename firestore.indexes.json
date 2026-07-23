@@ -261,6 +261,20 @@
       ]
     },
     {
+      "collectionGroup": "metricSnapshots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "orgId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "day",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "engagementSurveys",
       "queryScope": "COLLECTION",
       "fields": [

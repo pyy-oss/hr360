@@ -3,6 +3,8 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useSurveys, useSurveyResults } from '@/modules/engagement/useEngagement';
 import { useTrainingPlans } from '@/modules/formation/useFormation';
 import { useOrgMetrics, useLeaveByStatus, leaveStatusLabel } from '@/modules/dashboard/useMetrics';
+import { useMetricSnapshots, useCaptureSnapshot, type MetricSnapshot } from '@/modules/metrics/useTrends';
+import { toCsv, downloadCsv } from '@/lib/csv';
 
 const DEPT_COLORS = ['var(--signal-deep)', 'var(--signal)', '#2C5468', 'var(--gold)', '#7C8DA0'];
 const STATUS_META: { key: 'confirme' | 'essai' | 'sortant'; lab: string; bg: string }[] = [
@@ -11,6 +13,47 @@ const STATUS_META: { key: 'confirme' | 'essai' | 'sortant'; lab: string; bg: str
   { key: 'sortant', lab: 'Sortants', bg: 'var(--muted-2)' },
 ];
 const fr1 = (n: number) => n.toFixed(1).replace('.', ',');
+
+/** Colonnes de l'export CSV des tendances (clé = champ de MetricSnapshot). */
+const TREND_CSV_COLUMNS = [
+  { key: 'day', label: 'Jour' },
+  { key: 'headcount', label: 'Effectif' },
+  { key: 'essai', label: "Période d'essai" },
+  { key: 'confirme', label: 'Confirmés' },
+  { key: 'sortant', label: 'Sortants' },
+  { key: 'openPositions', label: 'Postes ouverts' },
+  { key: 'departuresInProgress', label: 'Départs en cours' },
+  { key: 'pendingLeave', label: 'Congés en attente' },
+  { key: 'activeCandidates', label: 'Candidats actifs' },
+];
+
+/** Mini-graphique en barres verticales CSS (aucune lib externe — CSP stricte). */
+function TrendBars({ label, series, color }: {
+  label: string; series: { day: string; value: number }[]; color: string;
+}) {
+  const max = Math.max(1, ...series.map((s) => s.value));
+  const latest = series[series.length - 1];
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+        <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{label}</span>
+        <b style={{ fontSize: 14 }} className="display">{latest ? latest.value : '—'}</b>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 56 }}>
+        {series.map((s) => (
+          <div
+            key={s.day}
+            title={`${s.day} : ${s.value}`}
+            style={{
+              flex: 1, minWidth: 3, borderRadius: '3px 3px 0 0',
+              height: `${Math.max(4, Math.round((s.value / max) * 100))}%`, background: color,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function AnalyticsPage() {
   const { role } = useAuth();
@@ -23,6 +66,19 @@ export function AnalyticsPage() {
   const surveys = useSurveys();
   const latestSurvey = (surveys.data ?? [])[0];
   const results = useSurveyResults(latestSurvey?.id, canReadEngagement);
+
+  const snapshots = useMetricSnapshots();
+  const capture = useCaptureSnapshot();
+  const canCapture = ['super_admin', 'drh'].includes(role ?? '');
+  const trendRows = snapshots.data ?? [];
+  const noTrends = !snapshots.isLoading && trendRows.length === 0;
+  const seriesOf = (pick: (s: MetricSnapshot) => number) =>
+    trendRows.map((s) => ({ day: s.day, value: pick(s) }));
+
+  const exportTrends = () => {
+    const rows = trendRows.map((s) => s as unknown as Record<string, unknown>);
+    downloadCsv(`tendances-rh-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows, TREND_CSV_COLUMNS));
+  };
 
   if (!isAllowed) {
     return (
@@ -62,6 +118,47 @@ export function AnalyticsPage() {
           icon={<path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />} />
         <Kpi val={String(metrics.departuresInProgress)} lab="Départs en cours"
           icon={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></>} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-head">
+          <h3>Tendances</h3>
+          <span className="sub" style={{ marginRight: 'auto' }}>évolution sur {trendRows.length} instantané{trendRows.length > 1 ? 's' : ''}</span>
+          <button className="btn btn-ghost" disabled={noTrends || snapshots.isLoading} onClick={exportTrends}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            Exporter (CSV)
+          </button>
+          {canCapture && (
+            <button className="btn btn-primary" disabled={capture.isPending} onClick={() => capture.mutate()}>
+              {capture.isPending ? 'Capture…' : "Figer l'instantané du jour"}
+            </button>
+          )}
+        </div>
+        <div className="card-pad">
+          <ErrBar error={snapshots.error} prefix="Chargement des tendances impossible." />
+          <ErrBar error={capture.error} prefix="Capture de l'instantané impossible." />
+          {capture.isSuccess && capture.data && (
+            <div className="alert alert-ok" style={{ marginBottom: 14, fontSize: 12 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+              <div>Instantané du {capture.data.day} figé — l'historique est à jour.</div>
+            </div>
+          )}
+          {snapshots.isLoading && <div style={{ fontSize: 13, color: 'var(--muted)' }}>Chargement…</div>}
+          {noTrends && (
+            <div className="alert alert-info" style={{ fontSize: 12 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              <div>Aucun instantané enregistré.{canCapture ? " Figez l'instantané du jour pour amorcer l'historique des tendances." : ' L\'historique se construira dès les premières captures.'}</div>
+            </div>
+          )}
+          {!snapshots.isLoading && trendRows.length > 0 && (
+            <div className="grid g2">
+              <TrendBars label="Effectif" series={seriesOf((s) => s.headcount)} color="var(--signal)" />
+              <TrendBars label="Postes ouverts" series={seriesOf((s) => s.openPositions)} color="var(--gold)" />
+              <TrendBars label="Congés en attente" series={seriesOf((s) => s.pendingLeave)} color="var(--mid)" />
+              <TrendBars label="Candidats actifs" series={seriesOf((s) => s.activeCandidates)} color="var(--signal-deep)" />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid g2" style={{ marginBottom: 16 }}>
