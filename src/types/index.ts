@@ -4,6 +4,7 @@ export * from './objectifs';
 export * from './collaborateurs';
 export * from './staffing';
 export * from './recrutement';
+export * from './remuneration';
 
 export interface Employee {
   id: string; orgId: string; uid: string;

@@ -249,6 +249,25 @@ service cloud.firestore {
       // NB : transitions de statut auditées via advanceCandidateStage (serveur).
     }
 
+    // ---------- rémunération : bandes salariales (politique interne) ----------
+    match /salaryBands/{id} {
+      // Grille lisible par la RH/DRH uniquement (pas de diffusion large).
+      allow read:  if sameOrg(resource.data) && hasAny(['super_admin','drh','rh']);
+      // Écriture serveur uniquement (upsertSalaryBand) : politique validée DRH.
+      allow write: if serverOnly();
+    }
+
+    // ---------- rémunération : rémunérations individuelles (donnée sensible) ----------
+    match /compensations/{employeeId} {
+      // Lecture : RH/DRH, OU le collaborateur pour SA propre rémunération.
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh']) ||
+                    isSelfEmp(employeeId)
+                  );
+      // Écriture serveur uniquement (setCompensation) : chaque changement est audité.
+      allow write: if serverOnly();
+    }
+
     // Par défaut : tout est refusé.
     match /{document=**} { allow read, write: if false; }
   }
