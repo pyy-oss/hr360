@@ -6,6 +6,7 @@ export * from './staffing';
 export * from './recrutement';
 export * from './remuneration';
 export * from './offboarding';
+export * from './onboarding';
 export * from './engagement';
 export * from './knowledge';
 

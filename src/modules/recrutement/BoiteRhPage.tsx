@@ -1,43 +1,149 @@
-const FILE_IC = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg>
-);
-const WARN_IC = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
-);
+import { useState } from 'react';
+import { ErrBar, Field } from '@/components/mq';
+import { useAuth } from '@/auth/AuthProvider';
+import { useSeedDemo } from '@/modules/absences/useLeave';
+import {
+  useCandidates, usePositions, useUpsertCandidate, useAdvanceCandidateStage,
+  type CandidateRow,
+} from './useRecrutement';
+import { STAGE_LABEL, NEXT_STAGE, initials, scoreClass } from './useRecrutementFO';
+import type { CandidateInput } from '@/types';
 
-type ScanCard = { icon: JSX.Element; title: string; sub: string; status: JSX.Element; processing?: boolean };
-const CARDS: ScanCard[] = [
-  { icon: FILE_IC, processing: true, title: 'Candidature — Consultant Cybersécurité', sub: 'CV_A.Kone.pdf · reçu il y a 6 min · OCR + extraction en cours', status: <span className="status st-proc"><span className="pdot" /> Analyse</span> },
-  { icon: FILE_IC, title: 'Candidature — Consultant Cybersécurité', sub: 'CV-Diallo-2026.pdf · scoré à 82 % · rattaché automatiquement', status: <span className="status st-done"><span className="pdot" /> Scoré</span> },
-  { icon: FILE_IC, title: 'Candidature spontanée — sans poste précisé', sub: 'cv_ibrahima_dev.docx · rattachée à « Développeur Full-Stack » (suggestion IA)', status: <span className="status st-done"><span className="pdot" /> Rattachée</span> },
-  { icon: WARN_IC, title: 'Doublon détecté', sub: 'M. Diallo a déjà postulé le 12/06 — candidatures fusionnées', status: <span className="status st-wait"><span className="pdot" /> Fusionné</span> },
-];
+const SOURCE_LABEL: Record<string, string> = {
+  spontanee: 'Spontanée', site: 'Site carrières', cooptation: 'Cooptation',
+  linkedin: 'LinkedIn', cabinet: 'Cabinet', autre: 'Autre',
+};
+
+function stageChip(stage: string) {
+  const on = ['preselection', 'entretien', 'offre', 'embauche'].includes(stage);
+  const off = stage === 'rejete';
+  return (
+    <span className={`chip${on ? ' on' : ''}`} style={off ? { background: 'var(--low-soft)', color: 'var(--low)', border: 'none' } : undefined}>
+      {STAGE_LABEL[stage as keyof typeof STAGE_LABEL] ?? stage}
+    </span>
+  );
+}
 
 export function BoiteRhPage() {
+  const { role } = useAuth();
+  const candidates = useCandidates();
+  const positions = usePositions();
+  const upsert = useUpsertCandidate();
+  const advance = useAdvanceCandidateStage();
+  const seed = useSeedDemo();
+  const [attachTo, setAttachTo] = useState<Record<string, string>>({});
+
+  const canManage = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const isSuperAdmin = role === 'super_admin';
+
+  const all = candidates.data ?? [];
+  const active = all.filter((c) => c.stage !== 'rejete' && c.stage !== 'embauche');
+  // File de traitement : d'abord les candidatures à rattacher (sans poste),
+  // puis les plus « fraîches » (étape la plus amont d'abord).
+  const stageRank: Record<string, number> = { nouveau: 0, preselection: 1, vivier: 1, entretien: 2, offre: 3 };
+  const queue = [...active].sort((a, b) => {
+    const pa = a.positionId ? 1 : 0;
+    const pb = b.positionId ? 1 : 0;
+    if (pa !== pb) return pa - pb;
+    return (stageRank[a.stage] ?? 9) - (stageRank[b.stage] ?? 9);
+  });
+
+  const received = active.length;
+  const toAttach = active.filter((c) => !c.positionId).length;
+  const scored = active.filter((c) => c.matchScore != null).length;
+  const empty = !candidates.isLoading && all.length === 0;
+
+  const attach = (c: CandidateRow, positionId: string) => {
+    const pos = (positions.data ?? []).find((p) => p.id === positionId);
+    const input: CandidateInput = {
+      id: c.id,
+      firstName: c.firstName, lastName: c.lastName, email: c.email,
+      phone: c.phone,
+      source: c.source as CandidateInput['source'],
+      positionId,
+      departmentId: pos?.departmentId ?? c.departmentId,
+      yearsExperience: c.yearsExperience,
+      stage: c.stage,
+      matchScore: c.matchScore,
+      tags: c.tags ?? [],
+    };
+    upsert.mutate(input);
+  };
+
   return (
     <>
       <div className="page-head">
         <h1>Boîte RH</h1>
-        <p>Connexion à <b>recrutement@neuronestech.com</b> via Microsoft 365. Chaque email est scanné, ses pièces jointes extraites (OCR inclus) et rattachées automatiquement à un poste.</p>
+        <p>File de traitement des candidatures reçues. Rattachez les candidatures spontanées à une ouverture de poste, puis faites-les avancer dans le pipeline.</p>
       </div>
+
+      <ErrBar error={candidates.error} prefix="Chargement des candidatures impossible." />
+      <ErrBar error={upsert.error} prefix="Rattachement impossible." />
+      <ErrBar error={advance.error} prefix="Transition impossible." />
+
+      <div className="grid g3" style={{ marginBottom: 16 }}>
+        <div className="card kpi"><div className="k-val display">{received}</div><div className="k-lab">Candidatures en cours</div></div>
+        <div className="card kpi"><div className="k-val display">{toAttach}</div><div className="k-lab">À rattacher à un poste</div></div>
+        <div className="card kpi"><div className="k-val display">{scored}</div><div className="k-lab">Déjà scorées</div></div>
+      </div>
+
+      {empty && (
+        <div className="alert alert-info" style={{ marginBottom: 16 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+          <div>Aucune candidature reçue.{isSuperAdmin && <> <button className="btn btn-primary" style={{ padding: '4px 10px', marginLeft: 8 }} disabled={seed.isPending} onClick={() => seed.mutate()}>{seed.isPending ? 'Chargement…' : 'Charger des données de démo'}</button></>}</div>
+        </div>
+      )}
+
       <div className="card">
         <div className="card-head">
           <h3>File de traitement</h3>
-          <span className="status st-proc" style={{ marginLeft: 'auto' }}><span className="pdot" /> Scan actif · synchro il y a 6 min</span>
+          <span className="sub">{queue.length} candidature{queue.length > 1 ? 's' : ''} en attente de traitement</span>
         </div>
-        <div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-          {CARDS.map((c, i) => (
-            <div key={i} className={`scan-card${c.processing ? ' processing' : ''}`}>
-              {c.processing && <div className="scan-line" />}
-              <div className="s-ic">{c.icon}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <b style={{ fontSize: '13.5px' }}>{c.title}</b>
-                <div style={{ fontSize: 12, color: 'var(--muted-2)' }}>{c.sub}</div>
+        {candidates.isLoading && <div className="card-pad" style={{ fontSize: 13, color: 'var(--muted)' }}>Chargement…</div>}
+        {!candidates.isLoading && queue.length === 0 && !empty && (
+          <div className="card-pad" style={{ fontSize: 13, color: 'var(--muted)' }}>Aucune candidature en attente — tout est traité.</div>
+        )}
+        {queue.map((c) => {
+          const pos = (positions.data ?? []).find((p) => p.id === c.positionId);
+          const next = NEXT_STAGE[c.stage];
+          const sel = attachTo[c.id] ?? '';
+          return (
+            <div key={c.id} className="cand">
+              <div className="c-av">{initials(c.firstName, c.lastName)}</div>
+              <div style={{ width: 190 }}>
+                <div className="c-name">{c.firstName} {c.lastName}</div>
+                <div className="c-meta">{c.yearsExperience} an{c.yearsExperience > 1 ? 's' : ''} d'exp. · {SOURCE_LABEL[c.source] ?? c.source}</div>
               </div>
-              {c.status}
+              <div className="c-mid" style={{ flex: 1 }}>
+                {stageChip(c.stage)}{' '}
+                {pos
+                  ? <span className="chip on" style={{ marginLeft: 4 }}>{pos.title}</span>
+                  : <span className="chip" style={{ marginLeft: 4, background: 'var(--mid-soft)', color: 'var(--mid)', border: 'none' }}>À rattacher</span>}
+              </div>
+              {c.matchScore != null && <span className={`score-badge ${scoreClass(c.matchScore)}`}>{c.matchScore} %</span>}
+              {canManage && !c.positionId && (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: 8 }}>
+                  <Field label="Rattacher à" style={{ minWidth: 170 }}>
+                    <select className="field" value={sel} onChange={(e) => setAttachTo((s) => ({ ...s, [c.id]: e.target.value }))}>
+                      <option value="">— poste —</option>
+                      {(positions.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                    </select>
+                  </Field>
+                  <button className="btn btn-primary" style={{ padding: '6px 10px' }} disabled={!sel || upsert.isPending}
+                    onClick={() => attach(c, sel)}>
+                    Rattacher
+                  </button>
+                </div>
+              )}
+              {canManage && next && (
+                <button className="btn btn-ghost" style={{ padding: '6px 10px', marginLeft: 8 }} disabled={advance.isPending}
+                  onClick={() => advance.mutate({ id: c.id, stage: next })}>
+                  → {STAGE_LABEL[next]}
+                </button>
+              )}
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </>
   );

@@ -275,6 +275,17 @@ service cloud.firestore {
       allow write: if serverOnly();
     }
 
+    // ---------- onboarding (parcours d'intégration) ----------
+    match /onboardings/{id} {
+      // Lecture RH/DRH/lecture et manager du département concerné (checklist interne).
+      allow read: if sameOrg(resource.data) && (
+                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    isDeptManager(resource.data.departmentId)
+                  );
+      // Écriture serveur uniquement (start/updateTask/close) : chaque étape est auditée.
+      allow write: if serverOnly();
+    }
+
     // ---------- engagement : enquêtes pulse (anonymat by design) ----------
     match /engagementSurveys/{id} {
       // Toute l'organisation voit les enquêtes (pour y répondre) ; écriture serveur.
