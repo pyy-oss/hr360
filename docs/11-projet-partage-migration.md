@@ -53,9 +53,17 @@ firebase deploy --only "hosting,firestore,functions:hr360,storage" --project <pr
 
 ## CI (GitHub Actions)
 
-`deploy.yml` déploie sur push vers `main`, restreint aux ressources hr360. À configurer :
-- **Secret** de dépôt `FIREBASE_TOKEN` (ou, recommandé, migrer vers un compte de service).
-- **Variable** de dépôt `FIREBASE_PROJECT_ID` = l'id du projet partagé.
+`deploy.yml` déploie sur push vers `main`, restreint aux ressources hr360.
+Authentification par **compte de service** (méthode pérenne ; le `--token` de
+`firebase login:ci` est déprécié). À configurer sur le dépôt :
+- **Secret** `FIREBASE_SERVICE_ACCOUNT` = le **contenu JSON** d'une clé de compte de
+  service du projet, au **moindre privilège** (rôles de déploiement Firebase : Hosting,
+  Firestore, Cloud Functions, Storage, + « Service Account User »). C'est un secret privé :
+  jamais commité, jamais côté frontend.
+- **Variable** `FIREBASE_PROJECT_ID` = l'id du projet partagé.
+
+Le workflow écrit le JSON dans un fichier temporaire, pointe `GOOGLE_APPLICATION_CREDENTIALS`
+dessus le temps du déploiement, puis le supprime.
 
 ## Migration vers un projet DÉDIÉ (plus tard)
 
