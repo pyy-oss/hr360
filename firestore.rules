@@ -280,6 +280,18 @@ service cloud.firestore {
       allow write: if serverOnly();
     }
 
+    // ---------- engagement : enquêtes pulse (anonymat by design) ----------
+    match /engagementSurveys/{id} {
+      // Toute l'organisation voit les enquêtes (pour y répondre) ; écriture serveur.
+      allow read:  if sameOrg(resource.data);
+      allow write: if serverOnly();
+    }
+    // Réponses ANONYMES et marqueurs de vote : jamais lisibles/écrivables côté client.
+    // Toute la logique passe par submitEngagementResponse / getEngagementResults (serveur),
+    // qui séparent identité (votes) et contenu (responses).
+    match /engagementResponses/{id} { allow read, write: if serverOnly(); }
+    match /engagementVotes/{id}     { allow read, write: if serverOnly(); }
+
     // Par défaut : tout est refusé.
     match /{document=**} { allow read, write: if false; }
   }

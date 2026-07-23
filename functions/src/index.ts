@@ -42,6 +42,12 @@ export { startOffboarding } from './offboarding/startOffboarding';
 export { updateOffboardingTask } from './offboarding/updateOffboardingTask';
 export { closeOffboarding } from './offboarding/closeOffboarding';
 
+// Engagement (enquêtes pulse anonymes)
+export { createEngagementSurvey } from './engagement/createEngagementSurvey';
+export { closeEngagementSurvey } from './engagement/closeEngagementSurvey';
+export { submitEngagementResponse } from './engagement/submitEngagementResponse';
+export { getEngagementResults } from './engagement/getEngagementResults';
+
 // Objectifs & évaluations
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
 export { upsertObjective } from './objectifs/upsertObjective';
