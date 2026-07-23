@@ -8,6 +8,35 @@ import type { TrainingPlanInput, EnrollmentUpdateInput } from '@/types';
 const createPlanFn = httpsCallable(functions, 'createTrainingPlan');
 const updateEnrollmentFn = httpsCallable(functions, 'updateEnrollment');
 
+export interface TrainingPlanRow { id: string; name: string; departmentId?: string; progressPct: number; }
+export interface CatalogRow { id: string; name: string; tag?: string; }
+
+/** Plans de formation de l'organisation. */
+export function useTrainingPlans() {
+  const { orgId } = useAuth();
+  return useQuery<TrainingPlanRow[]>({
+    queryKey: ['training', 'plans', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const snap = await getDocs(query(collection(db, 'trainingPlans'), where('orgId', '==', orgId), limit(100)));
+      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<TrainingPlanRow, 'id'>) }));
+    },
+  });
+}
+
+/** Catalogue de formation interne (org). */
+export function useTrainingCatalog() {
+  const { orgId } = useAuth();
+  return useQuery<CatalogRow[]>({
+    queryKey: ['training', 'catalog', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const snap = await getDocs(query(collection(db, 'trainingCatalog'), where('orgId', '==', orgId), limit(100)));
+      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CatalogRow, 'id'>) }));
+    },
+  });
+}
+
 /** Besoins de formation de mon département (paginés). */
 export function useDepartmentNeeds() {
   const { departmentId } = useAuth();

@@ -49,10 +49,30 @@ export const seedDemoData = onCall(async (req) => {
     { id: 'a_ak', employeeId: 'e_ak', missionId: 'm_audit_bank', departmentId: 'cyber', allocationPct: 30, startDate: '2026-08-15', endDate: '2026-11-30', status: 'active' },
   ];
 
+  const trainingCatalog = [
+    { id: 'tc_offensive', name: 'Parcours cybersécurité offensive', tag: '6 modules' },
+    { id: 'tc_iso', name: 'Conformité & normes ISO', tag: '4 modules' },
+    { id: 'tc_conseil', name: 'Posture conseil & relation client', tag: '3 modules' },
+    { id: 'tc_leadership', name: 'Leadership de mission', tag: 'Nouveau' },
+  ];
+  const trainingPlans = [
+    { id: 'tp_oscp', name: 'Certification OSCP (2 pers.)', departmentId: 'cyber', progressPct: 60 },
+    { id: 'tp_iso', name: 'ISO 27001 Lead Auditor', departmentId: 'conseil', progressPct: 45 },
+    { id: 'tp_cloud', name: 'Sécurité cloud Azure', departmentId: 'infra', progressPct: 80 },
+    { id: 'tp_posture', name: 'Posture conseil (soft skills)', departmentId: 'cyber', progressPct: 30 },
+  ];
+  const trainingNeeds = [
+    { id: 'tn_cloud', departmentId: 'cyber', skill: 'Sécurité cloud', priority: 'haute', source: 'manager', status: 'planifie' },
+    { id: 'tn_siem', departmentId: 'infra', skill: 'Supervision SIEM', priority: 'moyenne', source: 'manager', status: 'planifie' },
+  ];
+
   const batch = db.batch();
   for (const d of departments) batch.set(db.doc(`departments/${d.id}`), { orgId, ...d, updatedAt: now }, { merge: true });
   for (const m of missions) batch.set(db.doc(`missions/${m.id}`), { orgId, ...m, updatedAt: now }, { merge: true });
   for (const a of assignments) batch.set(db.doc(`assignments/${a.id}`), { orgId, ...a, updatedAt: now }, { merge: true });
+  for (const t of trainingCatalog) batch.set(db.doc(`trainingCatalog/${t.id}`), { orgId, ...t, updatedAt: now }, { merge: true });
+  for (const p of trainingPlans) batch.set(db.doc(`trainingPlans/${p.id}`), { orgId, ...p, updatedAt: now }, { merge: true });
+  for (const n of trainingNeeds) batch.set(db.doc(`trainingNeeds/${n.id}`), { orgId, ...n, updatedAt: now }, { merge: true });
   for (const e of employees) batch.set(db.doc(`employees/${e.id}`), { orgId, uid: null, ...e, updatedAt: now }, { merge: true });
   for (const b of balances) batch.set(db.doc(`leaveBalances/${b.id}`), { orgId, employeeId: b.id, ...b, updatedAt: now }, { merge: true });
   for (const r of leaveRequests) batch.set(db.doc(`leaveRequests/${r.id}`), { orgId, ...r, currentApproverUid: null, decisions: [], createdAt: now, updatedAt: now }, { merge: true });
