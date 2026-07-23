@@ -28,6 +28,7 @@ export const NAV: NavSection[] = [
   {
     label: 'Recrutement',
     items: [
+      { to: '/postes', label: 'Postes & ouvertures', roles: RECRUT, icon: ic(<path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />) },
       { to: '/boite-rh', label: 'Boîte RH', roles: RECRUT, icon: ic(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m2 7 10 6 10-6" /></>) },
       { to: '/vivier', label: 'Vivier', roles: RECRUT, icon: ic(<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>) },
       { to: '/scoring', label: 'Analyse & scoring', roles: RECRUT, icon: ic(<><path d="M3 3v18h18" /><path d="m7 14 3-4 4 3 5-7" /></>) },
@@ -84,7 +85,6 @@ export const NAV: NavSection[] = [
     items: [
       { to: '/equite', label: 'Équité & audit', roles: STRAT, icon: ic(<path d="M12 3v18M5 7h14M7 7l-3 6h6zM17 7l-3 6h6z" />) },
       { to: '/assistant', label: 'Assistant RH', icon: ic(<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />) },
-      { to: '/postes', label: 'Postes & référentiel', roles: RECRUT, icon: ic(<path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />) },
     ],
   },
 ];
