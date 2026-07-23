@@ -120,6 +120,23 @@ export const seedDemoData = onCall(async (req) => {
     },
   ];
 
+  const pulseQuestions = [
+    { key: 'sens', label: 'Sens & fierté' },
+    { key: 'management', label: 'Management de proximité' },
+    { key: 'charge', label: 'Charge de travail' },
+    { key: 'perspectives', label: "Perspectives d'évolution" },
+  ];
+  const engagementSurveys = [
+    { id: 'srv_2026t3', title: 'Enquête pulse — T3 2026', status: 'ouverte', questions: pulseQuestions },
+  ];
+  // Réponses anonymes de démonstration (aucune identité — cohérent avec le module).
+  const engagementResponses = [
+    { id: 'er_1', surveyId: 'srv_2026t3', scores: { sens: 5, management: 4, charge: 3, perspectives: 4 } },
+    { id: 'er_2', surveyId: 'srv_2026t3', scores: { sens: 4, management: 4, charge: 2, perspectives: 3 } },
+    { id: 'er_3', surveyId: 'srv_2026t3', scores: { sens: 5, management: 3, charge: 3, perspectives: 4 } },
+    { id: 'er_4', surveyId: 'srv_2026t3', scores: { sens: 4, management: 5, charge: 4, perspectives: 3 } },
+  ];
+
   const batch = db.batch();
   for (const d of departments) batch.set(db.doc(`departments/${d.id}`), { orgId, ...d, updatedAt: now }, { merge: true });
   for (const m of missions) batch.set(db.doc(`missions/${m.id}`), { orgId, ...m, updatedAt: now }, { merge: true });
@@ -138,6 +155,8 @@ export const seedDemoData = onCall(async (req) => {
   for (const sb of salaryBands) batch.set(db.doc(`salaryBands/${sb.id}`), { orgId, ...sb, updatedAt: now }, { merge: true });
   for (const cp of compensations) batch.set(db.doc(`compensations/${cp.id}`), { orgId, ...cp, updatedAt: now }, { merge: true });
   for (const ob of offboardings) batch.set(db.doc(`offboardings/${ob.id}`), { orgId, ...ob, createdAt: now, updatedAt: now }, { merge: true });
+  for (const sv of engagementSurveys) batch.set(db.doc(`engagementSurveys/${sv.id}`), { orgId, ...sv, createdAt: now, updatedAt: now }, { merge: true });
+  for (const er of engagementResponses) batch.set(db.doc(`engagementResponses/${er.id}`), { orgId, ...er, submittedAt: now }, { merge: true });
   await batch.commit();
 
   await writeAudit({
@@ -155,5 +174,6 @@ export const seedDemoData = onCall(async (req) => {
     evaluations: evaluations.length,
     salaryBands: salaryBands.length, compensations: compensations.length,
     offboardings: offboardings.length,
+    engagementSurveys: engagementSurveys.length, engagementResponses: engagementResponses.length,
   };
 });

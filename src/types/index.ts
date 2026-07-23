@@ -6,6 +6,7 @@ export * from './staffing';
 export * from './recrutement';
 export * from './remuneration';
 export * from './offboarding';
+export * from './engagement';
 
 export interface Employee {
   id: string; orgId: string; uid: string;
