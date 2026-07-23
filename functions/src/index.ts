@@ -37,6 +37,11 @@ export { advanceCandidateStage } from './recrutement/advanceCandidateStage';
 export { upsertSalaryBand } from './remuneration/upsertSalaryBand';
 export { setCompensation } from './remuneration/setCompensation';
 
+// Offboarding (processus de départ)
+export { startOffboarding } from './offboarding/startOffboarding';
+export { updateOffboardingTask } from './offboarding/updateOffboardingTask';
+export { closeOffboarding } from './offboarding/closeOffboarding';
+
 // Objectifs & évaluations
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
 export { upsertObjective } from './objectifs/upsertObjective';

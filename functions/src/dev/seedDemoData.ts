@@ -104,6 +104,22 @@ export const seedDemoData = onCall(async (req) => {
     { id: 'e_ak', employeeId: 'e_ak', departmentId: 'cyber', bandLevel: 'junior', baseSalary: 6300000, currency: 'XOF', effectiveDate: '2026-06-01' },
   ];
 
+  const offboardings = [
+    {
+      id: 'off_e_at', employeeId: 'e_at', departmentId: 'infra', reason: 'demission',
+      lastDay: '2026-09-30', status: 'en_cours',
+      tasks: [
+        { key: 'revocation_acces', label: 'Révocation des accès SI & comptes', done: false },
+        { key: 'restitution_materiel', label: 'Restitution du matériel', done: true },
+        { key: 'badge', label: "Restitution du badge d'accès", done: false },
+        { key: 'passation', label: 'Passation des missions & dossiers', done: true },
+        { key: 'entretien_sortie', label: 'Entretien de sortie réalisé', done: false },
+        { key: 'solde_tout_compte', label: 'Solde de tout compte', done: false },
+        { key: 'documents_fin', label: 'Documents de fin de contrat remis', done: false },
+      ],
+    },
+  ];
+
   const batch = db.batch();
   for (const d of departments) batch.set(db.doc(`departments/${d.id}`), { orgId, ...d, updatedAt: now }, { merge: true });
   for (const m of missions) batch.set(db.doc(`missions/${m.id}`), { orgId, ...m, updatedAt: now }, { merge: true });
@@ -121,6 +137,7 @@ export const seedDemoData = onCall(async (req) => {
   for (const ev of evaluations) batch.set(db.doc(`evaluations/${ev.id}`), { orgId, ...ev, createdAt: now, updatedAt: now }, { merge: true });
   for (const sb of salaryBands) batch.set(db.doc(`salaryBands/${sb.id}`), { orgId, ...sb, updatedAt: now }, { merge: true });
   for (const cp of compensations) batch.set(db.doc(`compensations/${cp.id}`), { orgId, ...cp, updatedAt: now }, { merge: true });
+  for (const ob of offboardings) batch.set(db.doc(`offboardings/${ob.id}`), { orgId, ...ob, createdAt: now, updatedAt: now }, { merge: true });
   await batch.commit();
 
   await writeAudit({
@@ -137,5 +154,6 @@ export const seedDemoData = onCall(async (req) => {
     campaigns: campaigns.length, objectives: objectives.length,
     evaluations: evaluations.length,
     salaryBands: salaryBands.length, compensations: compensations.length,
+    offboardings: offboardings.length,
   };
 });
