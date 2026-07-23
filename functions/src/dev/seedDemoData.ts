@@ -77,6 +77,15 @@ export const seedDemoData = onCall(async (req) => {
     { id: 'c_mk', firstName: 'Mariam', lastName: 'Koffi', email: 'm.koffi@example.ci', source: 'cooptation', positionId: 'p_soc_junior', departmentId: 'infra', yearsExperience: 2, stage: 'nouveau', matchScore: 71, tags: ['SIEM'] },
   ];
 
+  const campaigns = [
+    { id: 'camp_2026', name: 'Campagne annuelle 2026', year: 2026, phase: 'fixation' },
+  ];
+  const objectives = [
+    { id: 'obj_ak_1', campaignId: 'camp_2026', employeeId: 'e_ak', departmentId: 'cyber', title: "Réduire le délai moyen d'audit", measure: 'Délai ≤ 15 j ouvrés', weight: 40, status: 'brouillon' },
+    { id: 'obj_ak_2', campaignId: 'camp_2026', employeeId: 'e_ak', departmentId: 'cyber', title: 'Obtenir la certification OSCP', measure: 'Certification validée', weight: 60, status: 'valide' },
+    { id: 'obj_sk_1', campaignId: 'camp_2026', employeeId: 'e_sk', departmentId: 'infra', title: 'Industrialiser la supervision SIEM', measure: '3 playbooks livrés', weight: 100, status: 'valide' },
+  ];
+
   const batch = db.batch();
   for (const d of departments) batch.set(db.doc(`departments/${d.id}`), { orgId, ...d, updatedAt: now }, { merge: true });
   for (const m of missions) batch.set(db.doc(`missions/${m.id}`), { orgId, ...m, updatedAt: now }, { merge: true });
@@ -89,6 +98,8 @@ export const seedDemoData = onCall(async (req) => {
   for (const r of leaveRequests) batch.set(db.doc(`leaveRequests/${r.id}`), { orgId, ...r, currentApproverUid: null, decisions: [], createdAt: now, updatedAt: now }, { merge: true });
   for (const p of positions) batch.set(db.doc(`positions/${p.id}`), { orgId, ...p, createdAt: now, updatedAt: now }, { merge: true });
   for (const cd of candidates) batch.set(db.doc(`candidates/${cd.id}`), { orgId, ...cd, appliedAt: now, createdAt: now, updatedAt: now }, { merge: true });
+  for (const cp of campaigns) batch.set(db.doc(`objectiveCampaigns/${cp.id}`), { orgId, ...cp, createdAt: now, updatedAt: now }, { merge: true });
+  for (const o of objectives) batch.set(db.doc(`objectives/${o.id}`), { orgId, ...o, createdAt: now, updatedAt: now }, { merge: true });
   await batch.commit();
 
   await writeAudit({
@@ -102,5 +113,6 @@ export const seedDemoData = onCall(async (req) => {
     balances: balances.length, leaveRequests: leaveRequests.length,
     missions: missions.length, assignments: assignments.length,
     positions: positions.length, candidates: candidates.length,
+    campaigns: campaigns.length, objectives: objectives.length,
   };
 });
