@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CandidateInput } from '@/types';
+import { Field } from '@/components/mq';
 import { useUpsertCandidate, usePositions } from './useRecrutement';
 import { useDepartments } from '@/modules/collaborateurs/useCollaborateurs';
 
@@ -42,36 +43,33 @@ export function NewCandidateForm({ onDone }: { onDone: () => void }) {
       <div className="card-head"><h3>Nouveau candidat</h3></div>
       <div className="card-pad">
         <div className="form-grid">
-          <div><label className="flabel">Prénom</label><input className="field" value={f.firstName} onChange={(e) => set('firstName', e.target.value)} placeholder="Salif" /></div>
-          <div><label className="flabel">Nom</label><input className="field" value={f.lastName} onChange={(e) => set('lastName', e.target.value)} placeholder="Guéï" /></div>
-          <div><label className="flabel">Email</label><input className="field" type="email" value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="candidat@example.ci" /></div>
-          <div><label className="flabel">Téléphone (optionnel)</label><input className="field" value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+225…" /></div>
-          <div>
-            <label className="flabel">Source</label>
+          <Field label="Prénom"><input className="field" value={f.firstName} onChange={(e) => set('firstName', e.target.value)} placeholder="Salif" /></Field>
+          <Field label="Nom"><input className="field" value={f.lastName} onChange={(e) => set('lastName', e.target.value)} placeholder="Guéï" /></Field>
+          <Field label="Email"><input className="field" type="email" value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="candidat@example.ci" /></Field>
+          <Field label="Téléphone (optionnel)"><input className="field" value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+225…" /></Field>
+          <Field label="Source">
             <select className="field" value={f.source} onChange={(e) => set('source', e.target.value)}>
               <option value="spontanee">Candidature spontanée</option><option value="site">Site carrières</option>
               <option value="cooptation">Cooptation</option><option value="linkedin">LinkedIn</option>
               <option value="cabinet">Cabinet</option><option value="autre">Autre</option>
             </select>
-          </div>
-          <div>
-            <label className="flabel">Poste visé (optionnel)</label>
+          </Field>
+          <Field label="Poste visé (optionnel)">
             <select className="field" value={f.positionId} onChange={(e) => onPosition(e.target.value)}>
               <option value="">— vivier (aucun poste) —</option>
               {(positions.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="flabel">Département cible</label>
+          </Field>
+          <Field label="Département cible">
             <select className="field" value={f.departmentId} onChange={(e) => set('departmentId', e.target.value)}>
               <option value="">— choisir —</option>
               {(depts.data ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-          </div>
-          <div><label className="flabel">Années d'expérience</label><input className="field" type="number" min={0} max={60} value={f.yearsExperience} onChange={(e) => set('yearsExperience', e.target.value)} placeholder="5" /></div>
-          <div><label className="flabel">Score (0–100, saisi manuellement)</label><input className="field" type="number" min={0} max={100} value={f.matchScore} onChange={(e) => set('matchScore', e.target.value)} placeholder="84" /></div>
+          </Field>
+          <Field label="Années d'expérience"><input className="field" type="number" min={0} max={60} value={f.yearsExperience} onChange={(e) => set('yearsExperience', e.target.value)} placeholder="5" /></Field>
+          <Field label="Score (0–100, saisi manuellement)" hint="Aucune IA en V2 — évaluation du recruteur."><input className="field" type="number" min={0} max={100} value={f.matchScore} onChange={(e) => set('matchScore', e.target.value)} placeholder="84" /></Field>
         </div>
-        {err && <div className="ferr">{err}</div>}
+        {err && <div className="ferr" role="alert">{err}</div>}
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           <button className="btn btn-primary" disabled={upsert.isPending} onClick={submit}>{upsert.isPending ? 'Enregistrement…' : 'Ajouter au vivier'}</button>
           <button className="btn btn-ghost" onClick={onDone}>Annuler</button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TL } from '@/components/mq';
+import { TL, ErrBar } from '@/components/mq';
 import { useDirectory, type EmployeeRow } from '@/modules/collaborateurs/useCollaborateurs';
 import { useSeedDemo } from '@/modules/absences/useLeave';
 import { useAuth } from '@/auth/AuthProvider';
@@ -39,6 +39,8 @@ export function CollaborateursPage() {
       </div>
 
       {showForm && <NewEmployeeForm onDone={() => setShowForm(false)} />}
+
+      <ErrBar error={dir.error} prefix="Chargement de l'annuaire impossible." />
 
       {!dir.isLoading && employees.length === 0 && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>

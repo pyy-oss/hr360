@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ErrBar } from '@/components/mq';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSeedDemo } from '@/modules/absences/useLeave';
 import { usePositions, type PositionRow } from '@/modules/recrutement/useRecrutement';
@@ -51,6 +52,8 @@ export function PostesPage() {
       </div>
 
       {showForm && <NewPositionForm onDone={() => setShowForm(false)} />}
+
+      <ErrBar error={positions.error} prefix="Chargement des postes impossible." />
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>

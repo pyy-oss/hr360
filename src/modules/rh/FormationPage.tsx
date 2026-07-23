@@ -1,4 +1,4 @@
-import { Mini } from '@/components/mq';
+import { Mini, ErrBar } from '@/components/mq';
 import { useTrainingPlans, useTrainingCatalog } from '@/modules/formation/useFormation';
 import { useSeedDemo } from '@/modules/absences/useLeave';
 import { useAuth } from '@/auth/AuthProvider';
@@ -22,6 +22,8 @@ export function FormationPage() {
         <p>Le catalogue, les plans de montée en compétences et le suivi des certifications — reliés à la matrice de compétences et aux besoins de recrutement.</p>
         <span className="feat" style={{ marginTop: 8, display: 'inline-block' }}>Module #29 · données réelles</span>
       </div>
+
+      <ErrBar error={plans.error ?? catalog.error} prefix="Chargement des formations impossible." />
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>

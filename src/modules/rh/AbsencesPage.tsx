@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mini } from '@/components/mq';
+import { Mini, ErrBar } from '@/components/mq';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   usePendingLeave, useLeaveBalances, useEmployeesMap, useDecideLeave, useSeedDemo,
@@ -42,6 +42,9 @@ export function AbsencesPage() {
       </div>
 
       {showForm && <NewLeaveForm onDone={() => setShowForm(false)} />}
+
+      <ErrBar error={pending.error} prefix="Chargement des demandes impossible." />
+      <ErrBar error={decide.error} prefix="Décision impossible." />
 
       {empty && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>
