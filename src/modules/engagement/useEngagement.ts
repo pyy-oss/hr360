@@ -1,14 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { CreateSurveyInput, SubmitResponseInput, EngagementQuestion } from '@/types';
 
-const createFn = httpsCallable(functions, 'createEngagementSurvey');
-const closeFn = httpsCallable(functions, 'closeEngagementSurvey');
-const submitFn = httpsCallable(functions, 'submitEngagementResponse');
-const resultsFn = httpsCallable(functions, 'getEngagementResults');
+const createFn = callable('createEngagementSurvey');
+const closeFn = callable('closeEngagementSurvey');
+const submitFn = callable('submitEngagementResponse');
+const resultsFn = callable('getEngagementResults');
 
 export interface SurveyRow {
   id: string; title: string; status: string; questions: EngagementQuestion[];

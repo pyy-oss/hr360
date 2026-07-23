@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db, functions } from '@/lib/firebase';
+import { db, callable } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 
 /**
@@ -27,10 +26,10 @@ export interface MetricSnapshot {
   activeCandidates: number;
 }
 
-const captureFn = httpsCallable<
+const captureFn = callable<
   void,
   { ok: boolean; day: string; metrics: Record<string, number> }
->(functions, 'captureMetricsSnapshot');
+>('captureMetricsSnapshot');
 
 /** Historique des instantanés de l'organisation, du plus ancien au plus récent. */
 export function useMetricSnapshots() {

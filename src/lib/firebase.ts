@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getFunctions, connectFunctionsEmulator, httpsCallable, type HttpsCallable } from 'firebase/functions';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
 const app = initializeApp({
@@ -49,4 +49,31 @@ if (import.meta.env.VITE_USE_EMULATORS === 'true') {
   connectFirestoreEmulator(db, 'localhost', 8080);
   connectFunctionsEmulator(functions, 'localhost', 5001);
   connectStorageEmulator(storage, 'localhost', 9199);
+}
+
+/**
+ * Retire récursivement les clés `undefined` d'un payload. Le sérialiseur des fonctions
+ * callable Firebase convertit `undefined` en `null` sur le fil ; or les schémas zod
+ * `.optional()` rejettent `null` (→ « Requête invalide »). On omet donc les clés
+ * absentes plutôt que de les envoyer à null.
+ */
+function pruneUndefined(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(pruneUndefined);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v !== undefined) out[k] = pruneUndefined(v);
+    }
+    return out;
+  }
+  return value;
+}
+
+/**
+ * Fabrique une fonction callable dont le payload est nettoyé de ses `undefined`.
+ * À utiliser partout à la place de `httpsCallable(functions, name)`.
+ */
+export function callable<Req = unknown, Res = unknown>(name: string): HttpsCallable<Req, Res> {
+  const fn = httpsCallable<Req, Res>(functions, name);
+  return ((data?: Req) => fn(pruneUndefined(data) as Req)) as HttpsCallable<Req, Res>;
 }

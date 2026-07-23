@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import type { Role } from '@/lib/rbac';
 
-const setUserRoleFn = httpsCallable(functions, 'setUserRole');
+const setUserRoleFn = callable('setUserRole');
 
 export interface UserRow {
   id: string; email?: string; displayName?: string;

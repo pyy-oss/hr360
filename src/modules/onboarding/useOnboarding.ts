@@ -1,14 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, limit, getDocs } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type { OnboardingStartInput, OnboardingTaskUpdate, ProbationDecisionInput } from '@/types';
 
-const startFn = httpsCallable(functions, 'startOnboarding');
-const updateTaskFn = httpsCallable(functions, 'updateOnboardingTask');
-const closeFn = httpsCallable(functions, 'closeOnboarding');
-const decideProbationFn = httpsCallable(functions, 'decideProbation');
+const startFn = callable('startOnboarding');
+const updateTaskFn = callable('updateOnboardingTask');
+const closeFn = callable('closeOnboarding');
+const decideProbationFn = callable('decideProbation');
 
 export interface OnboardingTask { key: string; label: string; done: boolean; }
 export interface OnboardingRow {

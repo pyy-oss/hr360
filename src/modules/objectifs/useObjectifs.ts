@@ -1,22 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { httpsCallable } from 'firebase/functions';
 import {
-  collection, query, where, orderBy, limit, getDocs, getDoc, doc, updateDoc,
+  collection, query, where, limit, getDocs, getDoc, doc, updateDoc,
   serverTimestamp, QueryConstraint,
 } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { callable, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
 import type {
   AdvancePhaseInput, PublishEvaluationInput, ValidateObjectiveInput, ObjectiveInput,
 } from '@/types';
 
-const advancePhaseFn = httpsCallable(functions, 'advanceCampaignPhase');
-const publishEvalFn = httpsCallable(functions, 'publishEvaluation');
-const validateObjFn = httpsCallable(functions, 'validateObjective');
-const createCampaignFn = httpsCallable(functions, 'createObjectiveCampaign');
-const upsertObjectiveFn = httpsCallable(functions, 'upsertObjective');
-const openEvalsFn = httpsCallable(functions, 'openCampaignEvaluations');
-const submitEvalFn = httpsCallable(functions, 'submitEvaluation');
+const advancePhaseFn = callable('advanceCampaignPhase');
+const publishEvalFn = callable('publishEvaluation');
+const validateObjFn = callable('validateObjective');
+const createCampaignFn = callable('createObjectiveCampaign');
+const upsertObjectiveFn = callable('upsertObjective');
+const openEvalsFn = callable('openCampaignEvaluations');
+const submitEvalFn = callable('submitEvaluation');
 
 export interface CampaignRow { id: string; name: string; year: number; phase: string; }
 export interface ObjectiveRow {
@@ -30,15 +29,19 @@ export interface EvaluationRow {
 
 /** Campagnes de l'organisation. */
 export function useCampaigns() {
+  const { orgId } = useAuth();
   return useQuery<CampaignRow[]>({
-    queryKey: ['objectifs', 'campaigns'],
+    queryKey: ['objectifs', 'campaigns', orgId],
+    enabled: !!orgId,
     queryFn: async () => {
       const q = query(
         collection(db, 'objectiveCampaigns'),
-        orderBy('year', 'desc'), limit(10),
+        where('orgId', '==', orgId), limit(10),
       );
       const snap = await getDocs(q);
-      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CampaignRow, 'id'>) }));
+      return snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<CampaignRow, 'id'>) }))
+        .sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
     },
   });
 }
@@ -51,12 +54,12 @@ export function useCampaigns() {
  * (Une requête plus large serait rejetée en bloc par les règles.)
  */
 export function useCampaignObjectives(campaignId?: string) {
-  const { role, departmentId, employeeId } = useAuth();
+  const { orgId, role, departmentId, employeeId } = useAuth();
   return useQuery<ObjectiveRow[]>({
-    queryKey: ['objectifs', 'campaign-obj', campaignId, role, departmentId, employeeId],
-    enabled: !!campaignId,
+    queryKey: ['objectifs', 'campaign-obj', orgId, campaignId, role, departmentId, employeeId],
+    enabled: !!campaignId && !!orgId,
     queryFn: async () => {
-      const cons: QueryConstraint[] = [where('campaignId', '==', campaignId)];
+      const cons: QueryConstraint[] = [where('orgId', '==', orgId), where('campaignId', '==', campaignId)];
       if (['super_admin', 'drh', 'rh', 'lecture'].includes(role ?? '')) {
         // portée organisation
       } else if (role === 'manager' && departmentId) {
@@ -73,13 +76,14 @@ export function useCampaignObjectives(campaignId?: string) {
 
 /** Mes objectifs pour une campagne donnée. */
 export function useMyObjectives(campaignId?: string) {
-  const { employeeId } = useAuth();
+  const { orgId, employeeId } = useAuth();
   return useQuery({
-    queryKey: ['objectifs', 'mine', campaignId, employeeId],
-    enabled: !!campaignId && !!employeeId,
+    queryKey: ['objectifs', 'mine', orgId, campaignId, employeeId],
+    enabled: !!campaignId && !!employeeId && !!orgId,
     queryFn: async () => {
       const q = query(
         collection(db, 'objectives'),
+        where('orgId', '==', orgId),
         where('campaignId', '==', campaignId),
         where('employeeId', '==', employeeId),
       );
@@ -119,7 +123,7 @@ export function useValidateObjective() {
  *   refusée par les règles → on renvoie un marqueur « en attente de publication ».
  */
 export function useCampaignEvaluations(campaignId?: string) {
-  const { role, departmentId, employeeId } = useAuth();
+  const { orgId, role, departmentId, employeeId } = useAuth();
   const isStaff = ['super_admin', 'drh', 'rh', 'lecture'].includes(role ?? '');
   const isManager = role === 'manager';
   return useQuery<EvaluationRow[]>({
@@ -137,7 +141,7 @@ export function useCampaignEvaluations(campaignId?: string) {
           return [{ id: `${campaignId}__${employeeId}`, campaignId: campaignId!, employeeId: employeeId!, status: 'soumise' }];
         }
       }
-      const cons: QueryConstraint[] = [where('campaignId', '==', campaignId)];
+      const cons: QueryConstraint[] = [where('orgId', '==', orgId), where('campaignId', '==', campaignId)];
       if (isManager && departmentId) cons.push(where('departmentId', '==', departmentId));
       cons.push(limit(500));
       const snap = await getDocs(query(collection(db, 'evaluations'), ...cons));
