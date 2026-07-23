@@ -42,6 +42,12 @@ export { startOffboarding } from './offboarding/startOffboarding';
 export { updateOffboardingTask } from './offboarding/updateOffboardingTask';
 export { closeOffboarding } from './offboarding/closeOffboarding';
 
+// Onboarding & période d'essai (intégration)
+export { startOnboarding } from './onboarding/startOnboarding';
+export { updateOnboardingTask } from './onboarding/updateOnboardingTask';
+export { closeOnboarding } from './onboarding/closeOnboarding';
+export { decideProbation } from './onboarding/decideProbation';
+
 // Engagement (enquêtes pulse anonymes)
 export { createEngagementSurvey } from './engagement/createEngagementSurvey';
 export { closeEngagementSurvey } from './engagement/closeEngagementSurvey';

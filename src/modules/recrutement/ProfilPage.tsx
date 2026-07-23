@@ -1,59 +1,146 @@
-const SOFT = [
-  ['Posture conseil', 88, 'Confiance élevée'],
-  ['Vulgarisation', 82, 'Confiance élevée'],
-  ['Rigueur / traçabilité', 79, 'Confiance moy.'],
-  ['Travail en équipe', 60, 'À vérifier'],
-] as const;
+import { useMemo, useState } from 'react';
+import { ErrBar, Field } from '@/components/mq';
+import { useAuth } from '@/auth/AuthProvider';
+import { useCandidates, usePositions } from './useRecrutement';
+import { useScoreCandidate } from '@/modules/ia/useAi';
+import { STAGE_LABEL, initials, scoreClass } from './useRecrutementFO';
+
+const SOURCE_LABEL: Record<string, string> = {
+  spontanee: 'Candidature spontanée', site: 'Site carrières', cooptation: 'Cooptation',
+  linkedin: 'LinkedIn', cabinet: 'Cabinet', autre: 'Autre',
+};
 
 export function ProfilPage() {
+  const { role } = useAuth();
+  const candidates = useCandidates();
+  const positions = usePositions();
+  const score = useScoreCandidate();
+  const [candidateId, setCandidateId] = useState('');
+  const [scorePositionId, setScorePositionId] = useState('');
+
+  const canView = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+
+  const cand = useMemo(
+    () => (candidates.data ?? []).find((c) => c.id === candidateId),
+    [candidates.data, candidateId],
+  );
+  const attachedPosition = useMemo(
+    () => (positions.data ?? []).find((p) => p.id === cand?.positionId),
+    [positions.data, cand],
+  );
+
+  // Poste utilisé pour l'évaluation : le poste rattaché, sinon un choix manuel.
+  const effectivePositionId = cand?.positionId ?? scorePositionId;
+  const result = score.data;
+
+  if (!canView) {
+    return (
+      <>
+        <div className="page-head"><h1>Profil 360°</h1></div>
+        <div className="alert alert-info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+          <div>Cet écran est réservé aux équipes RH, DRH et managers.</div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="page-head">
-        <h1>Profil 360° — Aïcha Koné</h1>
-        <p>Consultant Cybersécurité · 6 ans d'expérience · <span className="score-badge sb-high" style={{ verticalAlign: 'middle' }}>Score 89 %</span></p>
+        <h1>Profil 360°</h1>
+        <p>Fiche détaillée d'un candidat du vivier. Sélectionnez un profil pour consulter son parcours et évaluer son adéquation à un poste.</p>
       </div>
+
+      <ErrBar error={candidates.error} prefix="Chargement des candidats impossible." />
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-head"><h3>Cartographie des compétences</h3><span className="sub">déduite du CV — confiance indiquée</span></div>
         <div className="card-pad">
-          <div className="radar-wrap">
-            <svg viewBox="0 0 300 300" width="100%">
-              <polygon points="150,40 245,95 245,205 150,260 55,205 55,95" fill="none" stroke="#E4E8EC" strokeWidth={1} />
-              <polygon points="150,95 198,123 198,177 150,205 102,177 102,123" fill="none" stroke="#EEF1F4" strokeWidth={1} />
-              <g stroke="#EEF1F4" strokeWidth={1}>
-                <line x1="150" y1="150" x2="150" y2="40" /><line x1="150" y1="150" x2="245" y2="95" /><line x1="150" y1="150" x2="245" y2="205" /><line x1="150" y1="150" x2="150" y2="260" /><line x1="150" y1="150" x2="55" y2="205" /><line x1="150" y1="150" x2="55" y2="95" />
-              </g>
-              <polygon points="150,51 226,106 221,191 150,244 93,183 83,112" fill="rgba(14,165,165,.16)" stroke="#0A7C7C" strokeWidth={2} />
-              <g fill="#0A7C7C"><circle cx="150" cy="51" r="3" /><circle cx="226" cy="106" r="3" /><circle cx="221" cy="191" r="3" /><circle cx="150" cy="244" r="3" /><circle cx="93" cy="183" r="3" /><circle cx="83" cy="112" r="3" /></g>
-              <text className="axis-lab" x="150" y="30" textAnchor="middle">Sécurité offensive</text>
-              <text className="axis-lab" x="252" y="92" textAnchor="start">Défense / SOC</text>
-              <text className="axis-lab" x="252" y="212" textAnchor="start">Réseau</text>
-              <text className="axis-lab" x="150" y="278" textAnchor="middle">Conformité ISO</text>
-              <text className="axis-lab" x="48" y="212" textAnchor="end">Cloud</text>
-              <text className="axis-lab" x="48" y="92" textAnchor="end">Communication</text>
-            </svg>
-            <div>
-              <div className="section-t" style={{ marginTop: 0 }}>Soft skills — indices repérés dans le parcours</div>
-              {SOFT.map(([lab, w, tag]) => (
-                <div key={lab} className="soft-row">
-                  <span className="sr-lab">{lab}</span>
-                  <div className="track"><div className="tf" style={{ width: `${w}%` }} /></div>
-                  <span className="sr-tag">{tag}</span>
-                </div>
+          <Field label="Candidat">
+            <select className="field" value={candidateId} onChange={(e) => { setCandidateId(e.target.value); setScorePositionId(''); score.reset(); }}>
+              <option value="">— choisir un candidat —</option>
+              {(candidates.data ?? []).map((c) => (
+                <option key={c.id} value={c.id}>{c.firstName} {c.lastName} · {STAGE_LABEL[c.stage]}</option>
               ))}
-            </div>
-          </div>
+            </select>
+          </Field>
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-head"><h3>Hypothèses comportementales à explorer en entretien</h3></div>
-        <div className="card-pad">
-          <div className="note" style={{ marginBottom: 16 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>Ce ne sont pas des verdicts psychologiques. L'IA signale des <b>zones à confirmer</b>, converties en questions d'entretien.</div>
-          <div className="hyp"><div className="h-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 2v20M2 12h20" /></svg></div><div><b>Parcours très autonome</b><p>Missions récentes en solo. Capacité à opérer dans une équipe cadrée à vérifier.</p><span className="to-check">→ Guide Manager (Q3)</span></div></div>
-          <div className="hyp"><div className="h-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m22 2-7 20-4-9-9-4z" /></svg></div><div><b>Trajectoire ascendante rapide</b><p>3 postes en 6 ans. À croiser avec attentes d'évolution et de rémunération.</p><span className="to-check">→ Guide RH (Q4)</span></div></div>
-        </div>
-      </div>
+      {cand && (
+        <>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-head">
+              <h3>{cand.firstName} {cand.lastName}</h3>
+              <span className="sub">{STAGE_LABEL[cand.stage]}{cand.matchScore != null && <> · <span className={`score-badge ${scoreClass(cand.matchScore)}`}>{cand.matchScore} %</span></>}</span>
+            </div>
+            <div className="card-pad">
+              <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                <div className="c-av" style={{ width: 54, height: 54, fontSize: 18 }}>{initials(cand.firstName, cand.lastName)}</div>
+                <div style={{ flex: 1 }}>
+                  <div className="ref-row"><span>Expérience</span><span className="ref-w">{cand.yearsExperience} an{cand.yearsExperience > 1 ? 's' : ''}</span></div>
+                  <div className="ref-row"><span>Source</span><span className="ref-w">{SOURCE_LABEL[cand.source] ?? cand.source}</span></div>
+                  <div className="ref-row"><span>Email</span><span className="ref-w" style={{ fontFamily: 'Inter', fontWeight: 500 }}>{cand.email}</span></div>
+                  {cand.phone && <div className="ref-row"><span>Téléphone</span><span className="ref-w" style={{ fontFamily: 'Inter', fontWeight: 500 }}>{cand.phone}</span></div>}
+                  <div className="ref-row"><span>Poste rattaché</span><span className="ref-w">{attachedPosition ? attachedPosition.title : 'Vivier (aucun poste)'}</span></div>
+                  <div className="ref-row" style={{ border: 'none' }}>
+                    <span>Compétences déclarées</span>
+                    <span>{(cand.tags ?? []).length > 0 ? (cand.tags ?? []).map((t) => <span key={t} className="chip ref-w" style={{ marginLeft: 4 }}>{t}</span>) : <span className="ref-w">—</span>}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-head"><h3>Évaluation de l'adéquation</h3><span className="feat">Claude · aide à la décision</span></div>
+            <div className="card-pad">
+              {!cand.positionId && (
+                <Field label="Poste pour l'évaluation" style={{ marginBottom: 10 }}>
+                  <select className="field" value={scorePositionId} onChange={(e) => setScorePositionId(e.target.value)}>
+                    <option value="">— choisir un poste —</option>
+                    {(positions.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
+                </Field>
+              )}
+              {cand.positionId && attachedPosition && (
+                <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 10 }}>Évaluation face au poste rattaché : <b>{attachedPosition.title}</b>.</div>
+              )}
+
+              <ErrBar error={score.error} prefix="Évaluation indisponible." />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button className="btn btn-primary" disabled={!effectivePositionId || score.isPending}
+                  onClick={() => score.mutate({ candidateId: cand.id, positionId: effectivePositionId! })}>
+                  {score.isPending ? 'Analyse…' : "Évaluer l'adéquation"}
+                </button>
+                <span style={{ fontSize: 12, color: 'var(--muted-2)' }}>Score professionnel uniquement — identité jamais transmise (ARTCI).</span>
+              </div>
+
+              {result && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                    <span className={`score-badge ${scoreClass(result.score)}`} style={{ fontSize: 18 }}>{result.score} %</span>
+                    <span style={{ fontSize: 13 }}>{result.summary}</span>
+                  </div>
+                  {result.axes.map((a) => (
+                    <div key={a.axis} style={{ marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><b>{a.axis}</b><span className="mono">{a.score}</span></div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>{a.rationale}</div>
+                    </div>
+                  ))}
+                  {result.mustHaveGaps.length > 0 && (
+                    <div className="alert alert-warn" style={{ fontSize: 12, marginTop: 8 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
+                      <div>Écarts sur compétences éliminatoires : {result.mustHaveGaps.join(', ')}</div>
+                    </div>
+                  )}
+                  <div className="note" style={{ marginTop: 10 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>Aide à la décision : la sélection reste un choix humain. Analyse journalisée (gouvernance).</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

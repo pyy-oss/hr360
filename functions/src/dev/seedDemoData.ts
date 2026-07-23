@@ -120,6 +120,23 @@ export const seedDemoData = onCall(async (req) => {
     },
   ];
 
+  const onboardings = [
+    {
+      id: 'onb_e_ak', employeeId: 'e_ak', departmentId: 'cyber',
+      startDate: '2026-07-01', status: 'en_cours',
+      tasks: [
+        { key: 'poste_travail', label: 'Poste de travail & équipement prêts', done: true },
+        { key: 'comptes_si', label: 'Création des comptes SI & accès', done: true },
+        { key: 'badge', label: "Badge d'accès remis", done: true },
+        { key: 'parrain', label: 'Parrain/marraine désigné(e)', done: true },
+        { key: 'dossier_admin', label: 'Dossier administratif complété', done: false },
+        { key: 'presentation_equipe', label: "Présentation à l'équipe", done: true },
+        { key: 'objectifs_essai', label: "Objectifs de période d'essai fixés", done: false },
+        { key: 'point_j30', label: 'Point à 30 jours planifié', done: false },
+      ],
+    },
+  ];
+
   const pulseQuestions = [
     { key: 'sens', label: 'Sens & fierté' },
     { key: 'management', label: 'Management de proximité' },
@@ -161,6 +178,7 @@ export const seedDemoData = onCall(async (req) => {
   for (const sb of salaryBands) batch.set(db.doc(`salaryBands/${sb.id}`), { orgId, ...sb, updatedAt: now }, { merge: true });
   for (const cp of compensations) batch.set(db.doc(`compensations/${cp.id}`), { orgId, ...cp, updatedAt: now }, { merge: true });
   for (const ob of offboardings) batch.set(db.doc(`offboardings/${ob.id}`), { orgId, ...ob, createdAt: now, updatedAt: now }, { merge: true });
+  for (const on of onboardings) batch.set(db.doc(`onboardings/${on.id}`), { orgId, ...on, createdAt: now, updatedAt: now }, { merge: true });
   for (const sv of engagementSurveys) batch.set(db.doc(`engagementSurveys/${sv.id}`), { orgId, ...sv, createdAt: now, updatedAt: now }, { merge: true });
   for (const er of engagementResponses) batch.set(db.doc(`engagementResponses/${er.id}`), { orgId, ...er, submittedAt: now }, { merge: true });
   for (const kd of knowledgeDocs) batch.set(db.doc(`knowledgeDocs/${kd.id}`), { orgId, ...kd, createdAt: now, updatedAt: now }, { merge: true });
@@ -180,7 +198,7 @@ export const seedDemoData = onCall(async (req) => {
     campaigns: campaigns.length, objectives: objectives.length,
     evaluations: evaluations.length,
     salaryBands: salaryBands.length, compensations: compensations.length,
-    offboardings: offboardings.length,
+    offboardings: offboardings.length, onboardings: onboardings.length,
     engagementSurveys: engagementSurveys.length, engagementResponses: engagementResponses.length,
     knowledgeDocs: knowledgeDocs.length,
   };

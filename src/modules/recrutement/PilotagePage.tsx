@@ -1,58 +1,85 @@
-type TL = { dot: '' | 'done' | 'wait'; title: string; sub: string };
+import { ErrBar, Mini } from '@/components/mq';
+import { useAuth } from '@/auth/AuthProvider';
+import { useSeedDemo } from '@/modules/absences/useLeave';
+import { usePipelineMetrics } from './useRecrutementFO';
 
-const WORKFLOWS: TL[] = [
-  { dot: 'done', title: 'Accusé de réception envoyé', sub: 'automatique à chaque candidature' },
-  { dot: 'done', title: 'Convocation entretien', sub: 'créneau proposé via Outlook · confirmé' },
-  { dot: '', title: 'Relance jury J-1', sub: 'rappel grille + guide aux 3 membres' },
-  { dot: 'wait', title: 'Réponse aux candidats non retenus', sub: 'en attente de validation RH' },
-];
-const ONBOARD: TL[] = [
-  { dot: 'done', title: 'Dossier candidat transféré', sub: 'vers le module RH / intégration' },
-  { dot: '', title: 'Création des accès IT', sub: 'comptes, matériel, badges' },
-  { dot: 'wait', title: "Parcours d'accueil", sub: 'planning J1 + rattachement équipe' },
-];
-
-function Timeline({ items }: { items: TL[] }) {
-  return (
-    <div className="tl">
-      {items.map((it) => (
-        <div key={it.title} className="tl-item">
-          <div className={`tl-dot${it.dot ? ' ' + it.dot : ''}`} />
-          <b style={{ fontSize: 13 }}>{it.title}</b>
-          <p style={{ fontSize: 12, color: 'var(--muted)' }}>{it.sub}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
+const STAGE_BG: Record<string, string> = {
+  nouveau: '#7C8DA0', preselection: 'var(--signal)', entretien: '#2C5468',
+  offre: 'var(--gold)', embauche: 'var(--signal-deep)',
+};
 
 export function PilotagePage() {
+  const { role } = useAuth();
+  const { metrics, isLoading, error, isEmpty } = usePipelineMetrics();
+  const seed = useSeedDemo();
+  const isSuperAdmin = role === 'super_admin';
+
+  const funnelMax = Math.max(1, ...metrics.funnel.map((s) => s.count));
+
   return (
     <>
       <div className="page-head">
         <h1>Pilotage prédictif</h1>
-        <p>Anticiper les besoins, automatiser les tâches sans valeur ajoutée, et passer le relais à l'onboarding sans ressaisie.</p>
+        <p>La vue d'ensemble du pipeline de recrutement — répartition par étape, conversion et postes en tension. Tous les indicateurs sont dérivés des candidatures et ouvertures réelles.</p>
       </div>
 
-      <div className="alert alert-warn" style={{ marginBottom: 16 }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
-        <div><b>Recrutement prédictif <span className="feat">#17</span></b> — un appel d'offres secteur bancaire est en phase finale (probabilité de gain élevée). Anticipez le staffing de 8 profils cyber pour tenir le délai de démarrage. Recruter avant d'avoir le couteau sous la gorge.</div>
+      <ErrBar error={error} prefix="Chargement des métriques impossible." />
+
+      {isEmpty && (
+        <div className="alert alert-info" style={{ marginBottom: 16 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+          <div>Aucune candidature à analyser.{isSuperAdmin && <> <button className="btn btn-primary" style={{ padding: '4px 10px', marginLeft: 8 }} disabled={seed.isPending} onClick={() => seed.mutate()}>{seed.isPending ? 'Chargement…' : 'Charger des données de démo'}</button></>}</div>
+        </div>
+      )}
+
+      <div className="grid g4" style={{ marginBottom: 16 }}>
+        <div className="card kpi"><div className="k-val display">{metrics.received}</div><div className="k-lab">Candidatures en cours</div></div>
+        <div className="card kpi"><div className="k-val display">{metrics.toAttach}</div><div className="k-lab">À rattacher</div></div>
+        <div className="card kpi"><div className="k-val display">{metrics.hired}</div><div className="k-lab">Recrutés</div></div>
+        <div className="card kpi"><div className="k-val display">{metrics.rejected}</div><div className="k-lab">Écartés</div></div>
       </div>
 
-      <div className="grid g2">
+      <div className="grid g2" style={{ marginBottom: 16 }}>
         <div className="card">
-          <div className="card-head"><h3>Workflows automatisés</h3><span className="feat">#18</span></div>
+          <div className="card-head"><h3>Répartition par étape</h3><span className="sub">pipeline actif</span></div>
           <div className="card-pad">
-            <div style={{ fontSize: '12.5px', color: 'var(--muted)', marginBottom: 16 }}>Relances, convocations et mises à jour de statut orchestrées via Microsoft 365. Le recruteur pilote, l'outil exécute.</div>
-            <Timeline items={WORKFLOWS} />
+            {isLoading && <div style={{ fontSize: 13, color: 'var(--muted)' }}>Chargement…</div>}
+            {!isLoading && metrics.funnel.map((s) => (
+              <Mini key={s.stage} lab={s.label} w={Math.round((s.count / funnelMax) * 100)} bg={STAGE_BG[s.stage] ?? 'var(--signal)'} val={String(s.count)} />
+            ))}
           </div>
         </div>
         <div className="card">
-          <div className="card-head"><h3>Passerelle onboarding</h3><span className="feat">#19</span></div>
+          <div className="card-head"><h3>Taux de conversion</h3><span className="sub">entre étapes du pipeline</span></div>
           <div className="card-pad">
-            <div style={{ fontSize: '12.5px', color: 'var(--muted)', marginBottom: 16 }}>Une fois recruté, transmission automatique vers l'intégration — sans ressaisie.</div>
-            <Timeline items={ONBOARD} />
+            {metrics.conversions.map((c) => (
+              <Mini key={c.from} lab={c.label} w={c.rate ?? 0} bg="var(--signal)" val={c.rate == null ? '—' : `${c.rate} %`} labW={150} />
+            ))}
+            <div className="note" style={{ marginTop: 12, fontSize: 12 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              Conversion approximative : part des candidats ayant atteint l'étape suivante ou au-delà (sans historique de transitions).
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-head"><h3>Postes en tension</h3><span className="sub">peu de candidats au regard des ouvertures</span></div>
+        <div className="card-pad">
+          {metrics.pressure.length === 0 && !isLoading && (
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Aucune ouverture de poste active.</div>
+          )}
+          {metrics.pressure.map((p) => (
+            <div key={p.position.id} className="cand" style={{ paddingLeft: 0, paddingRight: 0 }}>
+              <div style={{ flex: 1 }}>
+                <div className="c-name">{p.position.title}</div>
+                <div className="c-meta">{p.openings} ouverture{p.openings > 1 ? 's' : ''} · {p.candidates} candidat{p.candidates > 1 ? 's' : ''} rattaché{p.candidates > 1 ? 's' : ''}</div>
+              </div>
+              {p.tension
+                ? <span className="chip" style={{ background: 'var(--low-soft)', color: 'var(--low)', border: 'none' }}>En tension</span>
+                : <span className="chip on">Vivier suffisant</span>}
+            </div>
+          ))}
         </div>
       </div>
     </>

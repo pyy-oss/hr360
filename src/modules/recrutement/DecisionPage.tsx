@@ -1,74 +1,121 @@
-type Col = { av: string; name: string; tag: string; score: string; win?: boolean; rows: [string, number, string][] };
-const COLS: Col[] = [
-  { av: 'AK', name: 'Aïcha Koné', tag: 'Recommandé', score: '89', win: true, rows: [['Technique', 90, 'var(--signal-deep)'], ['Expérience', 86, '#2C5468'], ['Soft', 82, 'var(--gold)']] },
-  { av: 'MD', name: 'Mamadou Diallo', tag: 'Recommandé', score: '82', rows: [['Technique', 84, 'var(--signal-deep)'], ['Expérience', 82, '#2C5468'], ['Soft', 78, 'var(--gold)']] },
-  { av: 'FB', name: 'Fatou Bamba', tag: 'Shortlist', score: '76', rows: [['Technique', 70, 'var(--signal-deep)'], ['Expérience', 74, '#2C5468'], ['Soft', 86, 'var(--gold)']] },
-];
+import { useState } from 'react';
+import { ErrBar } from '@/components/mq';
+import { useAuth } from '@/auth/AuthProvider';
+import { useCandidates, usePositions, useAdvanceCandidateStage } from './useRecrutement';
+import { useScoreCandidate, type ScoreResult } from '@/modules/ia/useAi';
+import { DECISION_STAGES, STAGE_LABEL, initials, scoreClass } from './useRecrutementFO';
 
-const OFFER = [
-  ['Poste', 'Consultant Cybersécurité — Confirmé'],
-  ['Niveau / palier', 'Palier 4'],
-  ['Rémunération', 'Selon grille interne'],
-  ['Démarrage proposé', 'Dès accord'],
-];
+function DecisionRow({ candidateId, firstName, lastName, positionTitle, positionId, stage, matchScore, canDecide }: {
+  candidateId: string; firstName: string; lastName: string;
+  positionTitle?: string; positionId?: string; stage: string; matchScore?: number; canDecide: boolean;
+}) {
+  const advance = useAdvanceCandidateStage();
+  const score = useScoreCandidate();
+  const [res, setRes] = useState<ScoreResult | null>(null);
+
+  return (
+    <div className="cmp-col">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <div className="c-av" style={{ width: 34, height: 34 }}>{initials(firstName, lastName)}</div>
+        <div style={{ flex: 1 }}>
+          <b style={{ fontSize: '13.5px' }}>{firstName} {lastName}</b>
+          <div style={{ fontSize: 11, color: 'var(--muted-2)' }}>{positionTitle ?? 'Sans poste'} · {STAGE_LABEL[stage as keyof typeof STAGE_LABEL] ?? stage}</div>
+        </div>
+        {matchScore != null && <span className={`score-badge ${scoreClass(matchScore)}`}>{matchScore} %</span>}
+      </div>
+
+      {(res ?? score.data) && (() => {
+        const r = res ?? score.data!;
+        return (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span className={`score-badge ${scoreClass(r.score)}`}>{r.score} %</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{r.summary}</span>
+            </div>
+            {r.mustHaveGaps.length > 0
+              ? <div style={{ fontSize: 12, color: 'var(--low)' }}>Écarts : {r.mustHaveGaps.join(', ')}</div>
+              : <div style={{ fontSize: 12, color: 'var(--muted)' }}>Aucun écart éliminatoire détecté.</div>}
+          </div>
+        );
+      })()}
+
+      <ErrBar error={advance.error} prefix="Décision impossible." />
+      <ErrBar error={score.error} prefix="Évaluation indisponible." />
+
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {positionId && (
+          <button className="btn btn-ghost" style={{ padding: '6px 10px' }} disabled={score.isPending}
+            onClick={() => score.mutate({ candidateId, positionId }, { onSuccess: (r) => setRes(r) })}>
+            {score.isPending ? 'Analyse…' : 'Évaluer les écarts'}
+          </button>
+        )}
+        {canDecide && (
+          <>
+            <button className="btn btn-primary" style={{ padding: '6px 10px' }} disabled={advance.isPending}
+              onClick={() => advance.mutate({ id: candidateId, stage: 'embauche' })}>
+              Recruter
+            </button>
+            <button className="btn btn-ghost" style={{ padding: '6px 10px', color: 'var(--low)' }} disabled={advance.isPending}
+              onClick={() => advance.mutate({ id: candidateId, stage: 'rejete' })}>
+              Refuser
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function DecisionPage() {
+  const { role } = useAuth();
+  const candidates = useCandidates();
+  const positions = usePositions();
+  const canDecide = ['super_admin', 'drh', 'rh'].includes(role ?? '');
+
+  const finalists = (candidates.data ?? [])
+    .filter((c) => DECISION_STAGES.includes(c.stage))
+    .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+  const empty = !candidates.isLoading && finalists.length === 0;
+
   return (
     <>
       <div className="page-head">
         <h1>Décision &amp; jury</h1>
-        <p>Comparer les finalistes sur des bases homogènes, détecter les biais du jury, puis produire la décision et l'offre.</p>
+        <p>Les candidats en fin de pipeline (entretien, offre). Évaluez les écarts, puis prononcez la décision : recruté ou refusé. Chaque transition est auditée côté serveur.</p>
       </div>
 
-      <div className="alert alert-warn" style={{ marginBottom: 16 }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
-        <div><b>Divergence jury détectée <span className="feat">#10</span></b> — sur Fatou Bamba, le Tech Lead note 2/5 et le Manager 5/5 en « posture conseil ». À discuter en réunion : symptôme possible d'un biais individuel.</div>
-      </div>
+      <ErrBar error={candidates.error} prefix="Chargement des finalistes impossible." />
 
-      <div className="section-t" style={{ marginTop: 0 }}>Comparateur multi-candidats <span className="feat">#9</span></div>
-      <div className="grid g3" style={{ marginBottom: 20 }}>
-        {COLS.map((c) => (
-          <div key={c.av} className={`cmp-col${c.win ? ' win' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div className="c-av" style={{ width: 34, height: 34 }}>{c.av}</div>
-              <div><b style={{ fontSize: '13.5px' }}>{c.name}</b><div style={{ fontSize: 11, color: 'var(--muted-2)' }}>{c.tag}</div></div>
-              <span className="score-badge sb-high" style={{ marginLeft: 'auto' }}>{c.score}</span>
+      {empty && (
+        <div className="alert alert-info" style={{ marginBottom: 16 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+          <div>Aucun candidat en phase de décision. Faites progresser des profils depuis le vivier ou la boîte RH.</div>
+        </div>
+      )}
+
+      {candidates.isLoading && <div className="card"><div className="card-pad" style={{ fontSize: 13, color: 'var(--muted)' }}>Chargement…</div></div>}
+
+      {finalists.length > 0 && (
+        <>
+          <div className="section-t" style={{ marginTop: 0 }}>Finalistes · {finalists.length}</div>
+          <div className="grid g3">
+            {finalists.map((c) => {
+              const pos = (positions.data ?? []).find((p) => p.id === c.positionId);
+              return (
+                <DecisionRow key={c.id} candidateId={c.id} firstName={c.firstName} lastName={c.lastName}
+                  positionTitle={pos?.title} positionId={c.positionId} stage={c.stage}
+                  matchScore={c.matchScore} canDecide={canDecide} />
+              );
+            })}
+          </div>
+          {!canDecide && (
+            <div className="note" style={{ marginTop: 16 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+              La décision finale (recruter / refuser) est réservée aux équipes RH et DRH.
             </div>
-            {c.rows.map(([lab, v, bg]) => (
-              <div key={lab} className="mini" style={{ padding: '6px 0' }}>
-                <span className="m-lab" style={{ width: 90 }}>{lab}</span>
-                <div className="m-track"><div className="mf" style={{ width: `${v}%`, background: bg }} /></div>
-                <span className="m-val">{v}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid g2">
-        <div className="card">
-          <div className="card-head"><h3>Débrief consolidé</h3><span className="feat">#11</span></div>
-          <div className="card-pad">
-            <div style={{ fontSize: '12.5px', color: 'var(--muted)', marginBottom: 12 }}>Synthèse des grilles du jury, alignée sur le référentiel.</div>
-            <p style={{ fontSize: 13, lineHeight: 1.6 }}><b>Aïcha Koné</b> ressort en tête sur les axes techniques (pentest, conformité), point fort partagé par les trois membres du jury. Le seul écart concerne le travail en équipe, à confirmer lors de la période d'essai. Recommandation : <b>proposition d'embauche</b>, avec objectif d'intégration progressive dans une équipe encadrée.</p>
-            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}><span className="chip on">Consensus jury : fort</span><span className="chip">Score final : 89</span></div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-head"><h3>Proposition d'embauche</h3><span className="feat">#12</span></div>
-          <div className="card-pad">
-            <div style={{ fontSize: '12.5px', color: 'var(--muted)', marginBottom: 12 }}>Pré-remplie sur la grille salariale interne et le niveau évalué.</div>
-            {OFFER.map(([k, v], i) => (
-              <div key={k} className="ref-row" style={i === OFFER.length - 1 ? { border: 'none' } : undefined}>
-                <span>{k}</span><span className="ref-w" style={{ fontFamily: 'Inter', fontWeight: 500 }}>{v}</span>
-              </div>
-            ))}
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 14 }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg>Générer la lettre d'offre
-            </button>
-          </div>
-        </div>
-      </div>
+          )}
+        </>
+      )}
     </>
   );
 }
