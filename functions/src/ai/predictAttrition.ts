@@ -39,7 +39,7 @@ const SCHEMA = {
  * — aucune donnée nominative n'est transmise. Journalisé (gouvernance).
  */
 export const predictAttrition = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (req) => {
-  const c = assertRole(req, ['super_admin', 'drh']);
+  const c = assertRole(req, ['super_admin', 'drh', 'dirigeant']);
   const parsed = Schema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', 'Requête invalide.');
   const orgId = c.orgId;

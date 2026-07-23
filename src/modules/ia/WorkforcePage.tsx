@@ -16,7 +16,7 @@ const tensionLabel = (t: string) => (t === 'forte' ? 'Tension' : t === 'moyenne'
 
 export function WorkforcePage() {
   const { role } = useAuth();
-  const canRun = ['super_admin', 'drh'].includes(role ?? '');
+  const canRun = ['super_admin', 'drh', 'dirigeant'].includes(role ?? '');
 
   const directory = useDirectory();
   const departments = useDepartments();

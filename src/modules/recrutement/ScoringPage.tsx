@@ -47,7 +47,7 @@ function LiveScoring() {
   const score = useScoreCandidate();
   const [positionId, setPositionId] = useState('');
   const [candidateId, setCandidateId] = useState('');
-  const canScore = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const canScore = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
   if (!canScore) return null;
   const result = score.data;
 

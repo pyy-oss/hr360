@@ -15,7 +15,9 @@ service cloud.firestore {
     function hasAny(roles) { return signedIn() && role() in roles; }
     function sameOrg(res)  { return signedIn() && res.orgId == orgId(); }
     function isSelfEmp(eid){ return signedIn() && eid == empId(); }
-    function isDeptManager(d) { return role() == 'manager' && d == deptId(); }
+    // Périmètre départemental : mono (departmentId) OU multi (departmentIds — portefeuille HRBP / Codir transverse).
+    function inScope(d) { return d == deptId() || (claims().departmentIds != null && d in claims().departmentIds); }
+    function isDeptManager(d) { return role() == 'manager' && inScope(d); }
 
     // Écriture réservée au serveur (Admin SDK ignore ces règles) → toujours false ici.
     function serverOnly() { return false; }
@@ -39,7 +41,7 @@ service cloud.firestore {
 
     // ---------- users (reflet d'affichage ; le rôle qui fait autorité est dans les claims) ----------
     match /users/{uid} {
-      allow read:  if signedIn() && (uid == request.auth.uid || hasAny(['super_admin','drh','rh','lecture']));
+      allow read:  if signedIn() && (uid == request.auth.uid || hasAny(['super_admin','drh','rh','lecture','dirigeant']));
       // Le champ role NE PEUT PAS être écrit ici : il est posé via setUserRole (custom claims).
       allow update: if hasAny(['super_admin','drh']) && unchanged('role');
       allow create, delete: if hasAny(['super_admin','drh']);
@@ -48,7 +50,7 @@ service cloud.firestore {
     // ---------- employees (dossier RH) ----------
     match /employees/{id} {
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(id)
                   );
@@ -59,7 +61,7 @@ service cloud.firestore {
     // ---------- leaveRequests (absences & congés) ----------
     match /leaveRequests/{id} {
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(resource.data.employeeId)
                   );
@@ -84,7 +86,7 @@ service cloud.firestore {
     // ---------- leaveBalances (soldes — écriture serveur uniquement) ----------
     match /leaveBalances/{id} {
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(resource.data.employeeId)
                   );
@@ -98,7 +100,7 @@ service cloud.firestore {
     }
     match /trainingNeeds/{id} {
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(resource.data.employeeId)
                   );
@@ -118,7 +120,7 @@ service cloud.firestore {
     }
     match /enrollments/{id} {
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(resource.data.employeeId)
                   );
@@ -136,7 +138,7 @@ service cloud.firestore {
     }
     match /objectives/{id} {
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(resource.data.employeeId)
                   );
@@ -167,7 +169,7 @@ service cloud.firestore {
       // managerAssessment est toujours vide (écrit atomiquement au passage en 'soumise'),
       // donc aucune fuite.
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     (isSelfEmp(resource.data.employeeId)
                        && resource.data.status in ['en_cours', 'publiee'])
@@ -185,7 +187,8 @@ service cloud.firestore {
 
     // ---------- audit (append-only, serveur uniquement en écriture) ----------
     match /auditLogs/{id} {
-      allow read:  if hasAny(['super_admin','drh']);
+      // DRH + direction (dirigeant) pour la vue Équité & audit.
+      allow read:  if hasAny(['super_admin','drh','dirigeant']);
       allow write: if serverOnly();
     }
 
@@ -208,7 +211,7 @@ service cloud.firestore {
     }
     match /assignments/{id} {
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId) ||
                     isSelfEmp(resource.data.employeeId)
                   );
@@ -232,10 +235,10 @@ service cloud.firestore {
 
     // ---------- recrutement : candidats (données personnelles — minimisation ARTCI) ----------
     match /candidates/{id} {
-      // Accès restreint aux recruteurs (RH/DRH) et au manager du département cible.
-      // 'lecture' est volontairement EXCLU : donnée candidat sensible, pas de lecture large.
+      // Accès restreint aux recruteurs (RH/DRH/recruteur) et au manager du département cible.
+      // 'lecture'/'dirigeant' sont volontairement EXCLUS : donnée candidat sensible, pas de lecture large.
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh']) ||
+                    hasAny(['super_admin','drh','rh','recruteur']) ||
                     isDeptManager(resource.data.departmentId)
                   );
       // Écriture serveur uniquement (upsertCandidate / advanceCandidateStage) : le
@@ -268,7 +271,7 @@ service cloud.firestore {
       // Lecture RH/DRH/lecture et manager du département concerné (checklist interne,
       // pas exposée au collaborateur sortant).
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId)
                   );
       // Écriture serveur uniquement (start/updateTask/close) : chaque étape est auditée.
@@ -279,7 +282,7 @@ service cloud.firestore {
     match /onboardings/{id} {
       // Lecture RH/DRH/lecture et manager du département concerné (checklist interne).
       allow read: if sameOrg(resource.data) && (
-                    hasAny(['super_admin','drh','rh','lecture']) ||
+                    hasAny(['super_admin','drh','rh','lecture','dirigeant']) ||
                     isDeptManager(resource.data.departmentId)
                   );
       // Écriture serveur uniquement (start/updateTask/close) : chaque étape est auditée.
@@ -308,8 +311,8 @@ service cloud.firestore {
 
     // ---------- IA : journal de gouvernance (aiInvocations) ----------
     match /aiInvocations/{id} {
-      // Lecture réservée à la gouvernance (super_admin/DRH). Écriture serveur uniquement.
-      allow read:  if sameOrg(resource.data) && hasAny(['super_admin','drh']);
+      // Lecture réservée à la gouvernance (super_admin/DRH/direction). Écriture serveur uniquement.
+      allow read:  if sameOrg(resource.data) && hasAny(['super_admin','drh','dirigeant']);
       allow write: if serverOnly();
     }
 

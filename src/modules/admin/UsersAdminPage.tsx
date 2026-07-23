@@ -4,7 +4,7 @@ import type { Role } from '@/lib/rbac';
 import { RequirePermission } from '@/auth/RequirePermission';
 import { PageHead, Table, Row, Cell, Button, Input, Select, Notice, Badge } from '@/ui';
 
-const ROLES: Role[] = ['super_admin', 'drh', 'rh', 'manager', 'collaborateur', 'lecture'];
+const ROLES: Role[] = ['super_admin', 'drh', 'rh', 'recruteur', 'manager', 'collaborateur', 'lecture', 'dirigeant'];
 
 export function UsersAdminPage() {
   const { data: users, isLoading } = useUsers();

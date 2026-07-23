@@ -15,7 +15,7 @@ export function CompetencesPage() {
   const { role } = useAuth();
   const { rows, metrics, isLoading, error } = useCompetences();
   const analyze = useAnalyzeSkills();
-  const canRun = ['super_admin', 'drh', 'rh'].includes(role ?? '');
+  const canRun = ['super_admin', 'drh', 'rh', 'dirigeant'].includes(role ?? '');
   const ai = analyze.data;
   const empty = !isLoading && rows.length === 0;
 

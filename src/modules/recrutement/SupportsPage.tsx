@@ -17,7 +17,7 @@ export function SupportsPage() {
   const [kind, setKind] = useState<'fiche_poste' | 'compte_rendu'>('fiche_poste');
   const [brief, setBrief] = useState('');
 
-  const canGenerate = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const canGenerate = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
   const draft = generate.data;
 
   if (!canGenerate) {

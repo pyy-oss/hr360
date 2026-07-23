@@ -10,7 +10,7 @@ const APPROACH_LABEL: Record<string, string> = { former: 'Former', recruter: 'Re
 export function SkillsAiPage() {
   const { role } = useAuth();
   const analyze = useAnalyzeSkills();
-  const canRun = ['super_admin', 'drh', 'rh'].includes(role ?? '');
+  const canRun = ['super_admin', 'drh', 'rh', 'dirigeant'].includes(role ?? '');
   const data = analyze.data;
 
   return (

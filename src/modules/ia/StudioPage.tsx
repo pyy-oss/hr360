@@ -23,7 +23,7 @@ export function StudioPage() {
   const [tone, setTone] = useState<'neutre' | 'chaleureux' | 'formel'>('neutre');
   const [copied, setCopied] = useState(false);
 
-  const canGenerate = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const canGenerate = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
   const tool = TOOLS.find((t) => t.kind === sel)!;
 
   const generate = () => {

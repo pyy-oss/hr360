@@ -20,6 +20,7 @@ afterAll(() => fft.cleanup());
 beforeEach(async () => {
   await clearFirestore();
   await db.doc('departments/cyber').set({ orgId: ORG, name: 'Cybersécurité' });
+  await db.doc('departments/infra').set({ orgId: ORG, name: 'Infrastructure' });
 });
 
 describe('setUserRole — anti-escalade & anti-capture cross-org', () => {
@@ -54,6 +55,31 @@ describe('setUserRole — anti-escalade & anti-capture cross-org', () => {
     await makeUser('u_dep');
     await expect(setRole(reqOf(
       { uid: 'u_dep', role: 'manager', departmentId: 'inexistant' }, drh, 'u_drh',
+    ))).rejects.toThrow();
+  });
+
+  it('attribue les nouveaux rôles (recruteur, dirigeant)', async () => {
+    await makeUser('u_rec');
+    await setRole(reqOf({ uid: 'u_rec', role: 'recruteur' }, drh, 'u_drh'));
+    expect(((await auth.getUser('u_rec')).customClaims as any).role).toBe('recruteur');
+    await makeUser('u_ceo');
+    await setRole(reqOf({ uid: 'u_ceo', role: 'dirigeant' }, drh, 'u_drh'));
+    expect(((await auth.getUser('u_ceo')).customClaims as any).role).toBe('dirigeant');
+  });
+
+  it('pose un portefeuille multi-départements (departmentIds)', async () => {
+    await makeUser('u_dir');
+    await setRole(reqOf(
+      { uid: 'u_dir', role: 'manager', departmentId: 'infra', departmentIds: ['infra', 'cyber'] }, drh, 'u_drh',
+    ));
+    const claims = (await auth.getUser('u_dir')).customClaims as any;
+    expect(claims.departmentIds).toEqual(['infra', 'cyber']);
+  });
+
+  it('refuse un portefeuille contenant un département hors organisation', async () => {
+    await makeUser('u_dir2');
+    await expect(setRole(reqOf(
+      { uid: 'u_dir2', role: 'manager', departmentIds: ['cyber', 'inexistant'] }, drh, 'u_drh',
     ))).rejects.toThrow();
   });
 });

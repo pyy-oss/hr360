@@ -39,7 +39,7 @@ export function VivierPage() {
 
   const rows = [...(candidates.data ?? [])].sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
   const isSuperAdmin = role === 'super_admin';
-  const canManage = ['super_admin', 'drh', 'rh', 'manager'].includes(role ?? '');
+  const canManage = ['super_admin', 'drh', 'rh', 'recruteur', 'manager'].includes(role ?? '');
   const empty = !candidates.isLoading && rows.length === 0;
 
   return (

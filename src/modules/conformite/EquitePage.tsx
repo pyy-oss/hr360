@@ -18,7 +18,7 @@ const fmtDate = (d: Date | null) => d ? d.toLocaleString('fr-FR', { dateStyle: '
 
 export function EquitePage() {
   const { role } = useAuth();
-  const isGov = ['super_admin', 'drh'].includes(role ?? '');
+  const isGov = ['super_admin', 'drh', 'dirigeant'].includes(role ?? '');
   const audit = useAuditFeed(25);
   const ai = useAiUsage();
 

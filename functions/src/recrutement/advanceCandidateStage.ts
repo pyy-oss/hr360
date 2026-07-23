@@ -1,7 +1,7 @@
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { db } from '../lib/admin';
-import { getClaims, assertSameOrg, Claims } from '../lib/rbac';
+import { getClaims, assertSameOrg, inDeptScope, Claims } from '../lib/rbac';
 import { writeAudit } from '../lib/audit';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -14,10 +14,10 @@ const Schema = z.object({
 
 function assertRecruiter(req: CallableRequest, departmentId?: unknown): Claims {
   const c = getClaims(req);
-  const isHR = ['super_admin', 'drh', 'rh'].includes(c.role);
-  const isMgr = c.role === 'manager' && !!departmentId && c.departmentId === departmentId;
+  const isHR = ['super_admin', 'drh', 'rh', 'recruteur'].includes(c.role);
+  const isMgr = c.role === 'manager' && !!departmentId && inDeptScope(c, departmentId as string);
   if (!isHR && !isMgr) {
-    throw new HttpsError('permission-denied', 'Réservé à la RH ou au manager du département.');
+    throw new HttpsError('permission-denied', 'Réservé au recrutement ou au manager du département.');
   }
   return c;
 }

@@ -8,6 +8,7 @@ interface AuthState {
   role?: Role;
   orgId?: string;
   departmentId?: string;
+  departmentIds?: string[];
   employeeId?: string;
   loading: boolean;
 }
@@ -23,11 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return setState({ user: null, loading: false });
       // Les claims (rôle, rattachement) font autorité — lus depuis le token.
       const token = await user.getIdTokenResult();
-      const c = token.claims as Record<string, string>;
+      const c = token.claims as Record<string, unknown>;
       setState({
         user, loading: false,
-        role: c.role as Role, orgId: c.orgId,
-        departmentId: c.departmentId, employeeId: c.employeeId,
+        role: c.role as Role, orgId: c.orgId as string | undefined,
+        departmentId: c.departmentId as string | undefined,
+        departmentIds: Array.isArray(c.departmentIds) ? (c.departmentIds as string[]) : undefined,
+        employeeId: c.employeeId as string | undefined,
       });
     });
   }, []);
