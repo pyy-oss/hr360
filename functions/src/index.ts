@@ -6,6 +6,9 @@ setGlobalOptions({ region: 'europe-west1', maxInstances: 40 });
 // Auth / RBAC
 export { setUserRole } from './auth/setUserRole';
 
+// Démo / amorçage de données (réservé super_admin)
+export { seedDemoData } from './dev/seedDemoData';
+
 // Collaborateurs & départements
 export { upsertEmployee } from './collaborateurs/upsertEmployee';
 export { upsertDepartment } from './collaborateurs/upsertDepartment';
