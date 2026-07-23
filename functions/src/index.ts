@@ -53,6 +53,10 @@ export { aiAssistant } from './ai/aiAssistant';
 export { scoreCandidate } from './ai/scoreCandidate';
 export { generateContent } from './ai/generateContent';
 export { predictAttrition } from './ai/predictAttrition';
+export { askKnowledge } from './ai/askKnowledge';
+
+// Base de connaissances RH (sources du RAG)
+export { upsertKnowledgeDoc } from './knowledge/upsertKnowledgeDoc';
 
 // Objectifs & évaluations
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
