@@ -3,6 +3,7 @@ import { TL } from '@/components/mq';
 import { useDirectory, type EmployeeRow } from '@/modules/collaborateurs/useCollaborateurs';
 import { useSeedDemo } from '@/modules/absences/useLeave';
 import { useAuth } from '@/auth/AuthProvider';
+import { NewEmployeeForm } from './NewEmployeeForm';
 
 function statusChip(status: string) {
   if (status === 'confirme') return <span className="chip on">Confirmé</span>;
@@ -17,16 +18,27 @@ export function CollaborateursPage() {
   const seed = useSeedDemo();
   const employees = dir.data ?? [];
   const [selId, setSelId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
   const selected = employees.find((e) => e.id === selId) ?? employees[0];
   const isSuperAdmin = role === 'super_admin';
+  const canCreate = ['super_admin', 'drh', 'rh'].includes(role ?? '');
 
   return (
     <>
-      <div className="page-head">
-        <h1>Collaborateurs</h1>
-        <p>L'annuaire et le dossier de chaque salarié — la base unique de la donnée RH, alimentée dès l'embauche sans ressaisie.</p>
-        <span className="feat" style={{ marginTop: 8, display: 'inline-block' }}>Module #26 · données réelles</span>
+      <div className="page-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h1>Collaborateurs</h1>
+          <p>L'annuaire et le dossier de chaque salarié — la base unique de la donnée RH, alimentée dès l'embauche sans ressaisie.</p>
+          <span className="feat" style={{ marginTop: 8, display: 'inline-block' }}>Module #26 · données réelles</span>
+        </div>
+        {canCreate && !showForm && (
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>Nouveau collaborateur
+          </button>
+        )}
       </div>
+
+      {showForm && <NewEmployeeForm onDone={() => setShowForm(false)} />}
 
       {!dir.isLoading && employees.length === 0 && (
         <div className="alert alert-info" style={{ marginBottom: 16 }}>
