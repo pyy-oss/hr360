@@ -1,13 +1,16 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { functions, db } from '@/lib/firebase';
 import { useAuth } from '@/auth/AuthProvider';
+import type { KnowledgeDocInput } from '@/types';
 
 const assistantFn = httpsCallable(functions, 'aiAssistant');
 const scoreFn = httpsCallable(functions, 'scoreCandidate');
 const generateFn = httpsCallable(functions, 'generateContent');
 const predictFn = httpsCallable(functions, 'predictAttrition');
+const askKnowledgeFn = httpsCallable(functions, 'askKnowledge');
+const upsertKnowledgeFn = httpsCallable(functions, 'upsertKnowledgeDoc');
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string; }
 
@@ -65,6 +68,39 @@ export function usePredictAttrition() {
       const res = await predictFn({});
       return res.data as { ok: boolean; result: PredictionResult; aggregates: PredictionAggregates };
     },
+  });
+}
+
+export interface KnowledgeAnswer {
+  ok: boolean; text: string; citations: { title: string; quote: string }[]; docCount: number;
+}
+export interface KnowledgeDocRow { id: string; title: string; category: string; content: string; }
+
+/** Base de connaissances RH — poser une question (RAG cité). */
+export function useAskKnowledge() {
+  return useMutation({
+    mutationFn: async (question: string) => (await askKnowledgeFn({ question })).data as KnowledgeAnswer,
+  });
+}
+
+/** Documents de la base de connaissances (lisibles par l'organisation). */
+export function useKnowledgeDocs() {
+  const { orgId } = useAuth();
+  return useQuery<KnowledgeDocRow[]>({
+    queryKey: ['knowledge', 'docs', orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const snap = await getDocs(query(collection(db, 'knowledgeDocs'), where('orgId', '==', orgId), limit(100)));
+      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<KnowledgeDocRow, 'id'>) }));
+    },
+  });
+}
+
+export function useUpsertKnowledgeDoc() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: KnowledgeDocInput) => upsertKnowledgeFn(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['knowledge'] }),
   });
 }
 

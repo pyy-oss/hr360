@@ -137,6 +137,12 @@ export const seedDemoData = onCall(async (req) => {
     { id: 'er_4', surveyId: 'srv_2026t3', scores: { sens: 4, management: 5, charge: 4, perspectives: 3 } },
   ];
 
+  const knowledgeDocs = [
+    { id: 'kd_conges', title: 'Procédure de validation des congés', category: 'procedure', content: "Toute demande de congé se fait via l'application. En dessous de 10 jours ouvrés consécutifs, la validation du manager suffit. Au-delà de 10 jours ouvrés consécutifs, la demande requiert la validation du manager ET de la DRH, avec un préavis minimum de 15 jours. Les congés payés s'acquièrent à raison de 26 jours ouvrés par an. Un solde négatif n'est jamais autorisé." },
+    { id: 'kd_teletravail', title: 'Note RH 2026-03 — Télétravail', category: 'note_rh', content: 'Le télétravail est possible jusqu\'à 2 jours par semaine pour les postes éligibles, sur accord du manager. Les jours de présence obligatoire sont le mardi et le jeudi pour favoriser la collaboration. Le matériel est fourni par Neurones ; sa restitution est requise en cas de départ.' },
+    { id: 'kd_preavis', title: 'Règlement intérieur — Préavis', category: 'reglement', content: "La durée de préavis en cas de départ dépend de la catégorie et de l'ancienneté, conformément à la convention collective applicable. Pour un cadre en CDI, le préavis usuel est de 3 mois. Toute situation particulière doit être confirmée par la DRH et le juriste avant application." },
+  ];
+
   const batch = db.batch();
   for (const d of departments) batch.set(db.doc(`departments/${d.id}`), { orgId, ...d, updatedAt: now }, { merge: true });
   for (const m of missions) batch.set(db.doc(`missions/${m.id}`), { orgId, ...m, updatedAt: now }, { merge: true });
@@ -157,6 +163,7 @@ export const seedDemoData = onCall(async (req) => {
   for (const ob of offboardings) batch.set(db.doc(`offboardings/${ob.id}`), { orgId, ...ob, createdAt: now, updatedAt: now }, { merge: true });
   for (const sv of engagementSurveys) batch.set(db.doc(`engagementSurveys/${sv.id}`), { orgId, ...sv, createdAt: now, updatedAt: now }, { merge: true });
   for (const er of engagementResponses) batch.set(db.doc(`engagementResponses/${er.id}`), { orgId, ...er, submittedAt: now }, { merge: true });
+  for (const kd of knowledgeDocs) batch.set(db.doc(`knowledgeDocs/${kd.id}`), { orgId, ...kd, createdAt: now, updatedAt: now }, { merge: true });
   await batch.commit();
 
   await writeAudit({
@@ -175,5 +182,6 @@ export const seedDemoData = onCall(async (req) => {
     salaryBands: salaryBands.length, compensations: compensations.length,
     offboardings: offboardings.length,
     engagementSurveys: engagementSurveys.length, engagementResponses: engagementResponses.length,
+    knowledgeDocs: knowledgeDocs.length,
   };
 });

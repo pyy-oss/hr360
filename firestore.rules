@@ -287,6 +287,14 @@ service cloud.firestore {
     match /engagementResponses/{id} { allow read, write: if serverOnly(); }
     match /engagementVotes/{id}     { allow read, write: if serverOnly(); }
 
+    // ---------- base de connaissances RH (sources du RAG) ----------
+    match /knowledgeDocs/{id} {
+      // Documents de référence internes : lisibles par toute l'organisation.
+      allow read:  if sameOrg(resource.data);
+      // Écriture serveur uniquement (upsertKnowledgeDoc, RH/DRH, audité).
+      allow write: if serverOnly();
+    }
+
     // ---------- IA : journal de gouvernance (aiInvocations) ----------
     match /aiInvocations/{id} {
       // Lecture réservée à la gouvernance (super_admin/DRH). Écriture serveur uniquement.
