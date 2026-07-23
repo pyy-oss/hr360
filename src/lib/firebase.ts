@@ -13,9 +13,18 @@ const app = initializeApp({
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 });
 
+// Projet Firebase PARTAGÉ : hr360 est isolé des autres applications par des ressources
+// dédiées — une base Firestore NOMMÉE (jamais la base '(default)'), un bucket Storage
+// dédié (VITE_FIREBASE_STORAGE_BUCKET) et des fonctions en europe-west1.
+// Tout est piloté par l'environnement : migrer vers un projet dédié plus tard ne
+// demandera que de changer le .env (DB_ID -> '(default)', nouveau projet/bucket), sans
+// toucher au code applicatif.
+const DB_ID = import.meta.env.VITE_FIREBASE_DB_ID || 'hr360';
+const REGION = import.meta.env.VITE_FIREBASE_REGION || 'europe-west1';
+
 export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const functions = getFunctions(app, 'europe-west1');
+export const db = getFirestore(app, DB_ID);
+export const functions = getFunctions(app, REGION);
 export const storage = getStorage(app);
 
 if (import.meta.env.VITE_USE_EMULATORS === 'true') {
