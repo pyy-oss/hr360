@@ -201,10 +201,9 @@ service cloud.firestore {
     // ---------- staffing (missions & affectations) ----------
     match /missions/{id} {
       allow read: if sameOrg(resource.data);
-      allow create, update: if sameOrg(request.resource.data) && (
-                    hasAny(['super_admin','drh','rh']) ||
-                    isDeptManager(request.resource.data.departmentId)
-                  );
+      // Écriture serveur uniquement (upsertMission) : garantit le passage par les
+      // gardes métier et l'audit. Le client ne modifie jamais le statut en direct.
+      allow create, update: if serverOnly();
       allow delete: if hasAny(['super_admin','drh']);
     }
     match /assignments/{id} {
@@ -226,10 +225,8 @@ service cloud.firestore {
     match /positions/{id} {
       // Les ouvertures de poste sont visibles en interne (mobilité, référentiel).
       allow read: if sameOrg(resource.data);
-      allow create, update: if sameOrg(request.resource.data) && (
-                    hasAny(['super_admin','drh','rh']) ||
-                    isDeptManager(request.resource.data.departmentId)
-                  );
+      // Écriture serveur uniquement (upsertPosition) : statut & pondérations validés serveur.
+      allow create, update: if serverOnly();
       allow delete: if hasAny(['super_admin','drh']);
     }
 
@@ -241,12 +238,10 @@ service cloud.firestore {
                     hasAny(['super_admin','drh','rh']) ||
                     isDeptManager(resource.data.departmentId)
                   );
-      allow create, update: if sameOrg(request.resource.data) && (
-                    hasAny(['super_admin','drh','rh']) ||
-                    isDeptManager(request.resource.data.departmentId)
-                  );
+      // Écriture serveur uniquement (upsertCandidate / advanceCandidateStage) : le
+      // statut du pipeline et la minimisation du log restent sous contrôle serveur.
+      allow create, update: if serverOnly();
       allow delete: if hasAny(['super_admin','drh']);
-      // NB : transitions de statut auditées via advanceCandidateStage (serveur).
     }
 
     // ---------- rémunération : bandes salariales (politique interne) ----------

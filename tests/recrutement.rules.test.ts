@@ -27,14 +27,12 @@ describe('positions — ouvertures de poste', () => {
   it('une autre organisation ne lit pas le poste', async () => {
     await assertFails(getDoc(doc(otherOrg(), 'positions/p1')));
   });
-  it('RH crée un poste', async () => {
-    await assertSucceeds(setDoc(doc(rh(), 'positions/p2'), { orgId: ORG, departmentId: 'cyber', title: 'X', level: 'junior', status: 'ouvert' }));
+  // Écriture serveur uniquement (upsertPosition) : aucune écriture client, même RH/manager.
+  it('la RH ne crée pas un poste en direct (serveur only)', async () => {
+    await assertFails(setDoc(doc(rh(), 'positions/p2'), { orgId: ORG, departmentId: 'cyber', title: 'X', level: 'junior', status: 'ouvert' }));
   });
-  it('le manager cyber crée un poste de son département', async () => {
-    await assertSucceeds(setDoc(doc(mgrCyber(), 'positions/p3'), { orgId: ORG, departmentId: 'cyber', title: 'X', level: 'junior', status: 'ouvert' }));
-  });
-  it('le manager réseau ne crée pas un poste « cyber »', async () => {
-    await assertFails(setDoc(doc(mgrRes(), 'positions/p4'), { orgId: ORG, departmentId: 'cyber', title: 'X', level: 'junior', status: 'ouvert' }));
+  it('le manager ne crée pas un poste en direct (serveur only)', async () => {
+    await assertFails(setDoc(doc(mgrCyber(), 'positions/p3'), { orgId: ORG, departmentId: 'cyber', title: 'X', level: 'junior', status: 'ouvert' }));
   });
   it('le collaborateur ne crée pas de poste', async () => {
     await assertFails(setDoc(doc(collab(), 'positions/p5'), { orgId: ORG, departmentId: 'cyber', title: 'X', level: 'junior', status: 'ouvert' }));
@@ -65,8 +63,9 @@ describe('candidates — données personnelles (accès recruteur)', () => {
   it('une autre organisation ne lit pas le candidat', async () => {
     await assertFails(getDoc(doc(otherOrg(), 'candidates/c1')));
   });
-  it('RH crée un candidat', async () => {
-    await assertSucceeds(setDoc(doc(rh(), 'candidates/c2'), { orgId: ORG, departmentId: 'cyber', firstName: 'N', lastName: 'B', email: 'n@x.ci', source: 'spontanee', stage: 'nouveau', yearsExperience: 3 }));
+  // Écriture serveur uniquement (upsertCandidate / advanceCandidateStage).
+  it('la RH ne crée pas un candidat en direct (serveur only)', async () => {
+    await assertFails(setDoc(doc(rh(), 'candidates/c2'), { orgId: ORG, departmentId: 'cyber', firstName: 'N', lastName: 'B', email: 'n@x.ci', source: 'spontanee', stage: 'nouveau', yearsExperience: 3 }));
   });
   it('le collaborateur ne crée pas de candidat', async () => {
     await assertFails(setDoc(doc(collab(), 'candidates/c3'), { orgId: ORG, departmentId: 'cyber', firstName: 'N', lastName: 'B', email: 'n@x.ci', source: 'spontanee', stage: 'nouveau', yearsExperience: 3 }));
