@@ -287,6 +287,13 @@ service cloud.firestore {
     match /engagementResponses/{id} { allow read, write: if serverOnly(); }
     match /engagementVotes/{id}     { allow read, write: if serverOnly(); }
 
+    // ---------- IA : journal de gouvernance (aiInvocations) ----------
+    match /aiInvocations/{id} {
+      // Lecture réservée à la gouvernance (super_admin/DRH). Écriture serveur uniquement.
+      allow read:  if sameOrg(resource.data) && hasAny(['super_admin','drh']);
+      allow write: if serverOnly();
+    }
+
     // Par défaut : tout est refusé.
     match /{document=**} { allow read, write: if false; }
   }

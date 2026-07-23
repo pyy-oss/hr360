@@ -48,6 +48,9 @@ export { closeEngagementSurvey } from './engagement/closeEngagementSurvey';
 export { submitEngagementResponse } from './engagement/submitEngagementResponse';
 export { getEngagementResults } from './engagement/getEngagementResults';
 
+// Couche IA (appels Claude côté serveur — clé en secret, chaque appel audité)
+export { aiAssistant } from './ai/aiAssistant';
+
 // Objectifs & évaluations
 export { createObjectiveCampaign } from './objectifs/createObjectiveCampaign';
 export { upsertObjective } from './objectifs/upsertObjective';
