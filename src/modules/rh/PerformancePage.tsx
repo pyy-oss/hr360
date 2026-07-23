@@ -6,6 +6,7 @@ import {
   useCampaigns, useCampaignObjectives, useAdvancePhase, useValidateObjective,
 } from '@/modules/objectifs/useObjectifs';
 import { NewObjectiveForm } from '@/modules/objectifs/NewObjectiveForm';
+import { CampaignEvaluations } from '@/modules/objectifs/CampaignEvaluations';
 
 const PHASES = ['preparation', 'fixation', 'suivi', 'evaluation', 'cloturee'] as const;
 const PHASE_LABEL: Record<string, string> = {
@@ -144,6 +145,12 @@ export function PerformancePage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {selected && (selected.phase === 'evaluation' || selected.phase === 'cloturee') && (
+        <div style={{ marginTop: 16 }}>
+          <CampaignEvaluations campaignId={selected.id} />
         </div>
       )}
     </>

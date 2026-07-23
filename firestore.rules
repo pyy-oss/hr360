@@ -161,11 +161,16 @@ service cloud.firestore {
       allow delete: if hasAny(['super_admin','drh']);
     }
     match /evaluations/{id} {
-      // Le collaborateur ne voit son évaluation que si elle est publiée.
+      // Le collaborateur lit SON évaluation quand elle est 'en_cours' (pour sa propre
+      // auto-évaluation) ou 'publiee' (résultat). En 'soumise', l'appréciation du
+      // manager est rédigée mais pas encore publiée : il ne la voit pas. En 'en_cours',
+      // managerAssessment est toujours vide (écrit atomiquement au passage en 'soumise'),
+      // donc aucune fuite.
       allow read: if sameOrg(resource.data) && (
                     hasAny(['super_admin','drh','rh','lecture']) ||
                     isDeptManager(resource.data.departmentId) ||
-                    (isSelfEmp(resource.data.employeeId) && resource.data.status == 'publiee')
+                    (isSelfEmp(resource.data.employeeId)
+                       && resource.data.status in ['en_cours', 'publiee'])
                   );
       // Auto-évaluation par le collaborateur (self) ; évaluation par le manager/RH.
       // Le statut est TOUJOURS inchangé côté client : toute transition (dont la
