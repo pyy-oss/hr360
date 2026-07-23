@@ -5,6 +5,7 @@ import { db } from '../lib/admin';
 import { assertSameOrg, getClaims } from '../lib/rbac';
 import { getAnthropic, AI_MODEL, ANTHROPIC_API_KEY, textOf } from './client';
 import { logAiInvocation } from './governance';
+import { assertAndCountAiQuota } from './quota';
 
 const Schema = z.object({
   kind: z.enum(['offre', 'fiche_poste', 'compte_rendu', 'reponse_candidat', 'communication', 'lettre_embauche']),
@@ -62,6 +63,7 @@ export const generateContent = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (r
     messages: [{ role: 'user' as const, content: userPrompt }],
   } satisfies Anthropic.MessageCreateParamsNonStreaming;
 
+  await assertAndCountAiQuota(req.auth!.uid, claims.orgId);
   const started = Date.now();
   try {
     const resp = await getAnthropic().messages.create(params);
